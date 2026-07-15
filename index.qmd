@@ -1,0 +1,7 @@
+---
+title: "Presentations"
+---
+
+## Talks
+
+- [FSQ, LLaSA & Inworld TTS](fsq-llasa-inworld/slides.qmd)

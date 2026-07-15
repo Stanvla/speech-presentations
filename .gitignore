@@ -1,0 +1,8 @@
+_site/
+.quarto/
+**/slides_files/
+*.html
+
+# OS
+.DS_Store
+Thumbs.db

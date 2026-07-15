@@ -1,0 +1,197 @@
+---
+title: "FSQ, LLaSA & Inworld TTS"
+author: "Vladislav Stankov"
+format:
+  revealjs:
+    incremental: true
+    chalkboard: true
+    theme: simple
+    slide-number: true
+    width: 1920
+    height: 1080
+    html-math-method: katex
+---
+
+# Finite Scalar Quantization {background-color="#2d4059"}
+
+## Motivation
+
+- Vector Quantization (VQ) is widely used in neural codecs
+- VQ suffers from **codebook collapse** — many codes go unused
+- **FSQ** replaces VQ with a simple, deterministic quantizer
+- No commitment loss, no EMA updates, no codebook
+
+## FSQ — Core Idea
+
+- Project latent $z \in \mathbb{R}^d$ to a bounded range via $\tanh$
+- Round each dimension to one of $L$ levels
+
+$$
+\hat{z}_i = \left\lfloor \frac{L_i - 1}{2} \cdot \tanh(z_i) \right\rceil
+$$
+
+- Codebook size = $\prod_{i=1}^{d} L_i$ — **implicit**, no learned embeddings
+- Straight-through estimator (STE) for gradients
+
+## FSQ vs VQ
+
+:::: {.columns}
+::: {.column width="50%"}
+### VQ
+
+- Learned codebook $\mathcal{C} = \{e_k\}_{k=1}^{K}$
+- Nearest-neighbor lookup
+- Commitment + EMA losses
+- Codebook collapse risk
+:::
+
+::: {.column width="50%"}
+### FSQ
+
+- **No** learned codebook
+- Deterministic rounding
+- **No** auxiliary losses
+- Full codebook utilization
+:::
+::::
+
+## FSQ — Training Objective
+
+::: {.nonincremental}
+The encoder-decoder is trained end-to-end:
+:::
+
+$$
+\mathcal{L} = \underbrace{\|x - \hat{x}\|_2^2}_{\text{reconstruction}} + \lambda \cdot \mathcal{L}_{\text{perceptual}}
+$$
+
+::: {.fragment}
+No commitment loss term — the STE handles gradient flow through rounding.
+:::
+
+# LLaSA {background-color="#34495e"}
+
+## LLaSA — Overview
+
+- **L**arge **La**nguage model based **S**peech synthesis with spontaneous **A**ttributes
+- Leverages pre-trained LLMs for text-to-speech
+- Models spontaneous speech phenomena (fillers, pauses, laughter)
+- Codec-based: audio $\rightarrow$ discrete tokens $\rightarrow$ LLM $\rightarrow$ audio
+
+## LLaSA — Architecture
+
+:::: {.columns}
+::: {.column width="55%"}
+
+- **Speech tokenizer**: XCodec2 — audio to discrete tokens
+- **Language model**: fine-tuned LLaMA
+- **Vocoder**: reconstructs waveform from tokens
+
+:::
+::: {.column width="45%"}
+
+<!-- Replace with your own architecture diagram -->
+<!-- ![](images/llasa-arch.png) -->
+
+:::
+::::
+
+## LLaSA — Token Representation
+
+- XCodec2 produces a single-codebook token stream
+- Each token represents ~20ms of audio
+- Text and speech tokens share the same vocabulary
+
+$$
+\mathcal{V} = \mathcal{V}_{\text{text}} \cup \mathcal{V}_{\text{speech}}
+$$
+
+- The LLM is trained autoregressively on interleaved text + speech
+
+## LLaSA — Animated Derivation Example
+
+::: {.nonincremental}
+Autoregressive generation objective:
+:::
+
+::: {.fragment}
+$$
+p(\mathbf{s} \mid \mathbf{t}) = \prod_{i=1}^{N} p(s_i \mid s_{<i}, \mathbf{t})
+$$
+:::
+
+::: {.fragment}
+$$
+\mathcal{L}_{\text{AR}} = -\sum_{i=1}^{N} \log p(s_i \mid s_{<i}, \mathbf{t})
+$$
+:::
+
+::: {.fragment}
+$$
+= -\mathbb{E}_{(\mathbf{t}, \mathbf{s}) \sim \mathcal{D}} \left[ \sum_{i=1}^{N} \log p_\theta(s_i \mid s_{<i}, \mathbf{t}) \right]
+$$
+:::
+
+# Inworld TTS {background-color="#1a5276"}
+
+## Inworld — Context
+
+- Real-time TTS for interactive AI characters
+- Low latency requirement for conversational AI
+- Must handle diverse speaking styles and emotions
+- Integration with game engines and virtual worlds
+
+## Inworld — Key Requirements
+
+- **Streaming**: first audio chunk before full generation
+- **Expressiveness**: emotion, emphasis, pacing
+- **Consistency**: stable character voice across sessions
+- **Efficiency**: run on consumer hardware
+
+## Inworld — Code Example
+
+```{.python code-line-numbers="|3-5|7-9"}
+from inworld import InworldClient
+
+client = InworldClient(
+    api_key="your-api-key",
+    scene="scenes/my-scene"
+)
+
+response = client.send_text("Hello, adventurer!")
+audio = response.audio  # streaming audio chunks
+```
+
+# Summary {background-color="#2c3e50"}
+
+## Comparison
+
+| | FSQ | LLaSA | Inworld |
+|---|---|---|---|
+| Type | Quantizer | TTS model | TTS platform |
+| Key idea | Deterministic rounding | LLM-based codec TTS | Real-time character TTS |
+| Codebook | Implicit | XCodec2 | Proprietary |
+| Open source | ✓ | ✓ | Partial |
+
+## Key Takeaways
+
+- **FSQ** simplifies quantization — no codebook, no collapse, drop-in VQ replacement
+- **LLaSA** shows LLMs can generate natural, spontaneous speech
+- **Inworld** brings expressive TTS to real-time interactive applications
+- Common thread: **discrete audio tokens** enable language-model approaches to speech
+
+## References
+
+::: {.nonincremental}
+- Mentzer et al., "Finite Scalar Quantization: VQ-VAE Made Simple" (ICLR 2024)
+- LLaSA paper and XCodec2
+- Inworld AI documentation
+:::
+
+## {background-color="#2c3e50"}
+
+::: {style="text-align: center; margin-top: 200px;"}
+### Thank you!
+
+Questions?
+:::
