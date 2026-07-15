@@ -1,0 +1,121 @@
+[
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#motivation",
+    "href": "fsq-llasa-inworld/slides.html#motivation",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Motivation",
+    "text": "Motivation\n\nVector Quantization (VQ) is widely used in neural codecs\nVQ suffers from codebook collapse — many codes go unused\nFSQ replaces VQ with a simple, deterministic quantizer\nNo commitment loss, no EMA updates, no codebook"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#fsq-core-idea",
+    "href": "fsq-llasa-inworld/slides.html#fsq-core-idea",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "FSQ — Core Idea",
+    "text": "FSQ — Core Idea\n\nProject latent z \\in \\mathbb{R}^d to a bounded range via \\tanh\nRound each dimension to one of L levels\n\n\n\\hat{z}_i = \\left\\lfloor \\frac{L_i - 1}{2} \\cdot \\tanh(z_i) \\right\\rceil\n\n\nCodebook size = \\prod_{i=1}^{d} L_i — implicit, no learned embeddings\nStraight-through estimator (STE) for gradients"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#fsq-vs-vq",
+    "href": "fsq-llasa-inworld/slides.html#fsq-vs-vq",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "FSQ vs VQ",
+    "text": "FSQ vs VQ\n\n\nVQ\n\nLearned codebook \\mathcal{C} = \\{e_k\\}_{k=1}^{K}\nNearest-neighbor lookup\nCommitment + EMA losses\nCodebook collapse risk\n\n\nFSQ\n\nNo learned codebook\nDeterministic rounding\nNo auxiliary losses\nFull codebook utilization"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#fsq-training-objective",
+    "href": "fsq-llasa-inworld/slides.html#fsq-training-objective",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "FSQ — Training Objective",
+    "text": "FSQ — Training Objective\nThe encoder-decoder is trained end-to-end:\n\n\\mathcal{L} = \\underbrace{\\|x - \\hat{x}\\|_2^2}_{\\text{reconstruction}} + \\lambda \\cdot \\mathcal{L}_{\\text{perceptual}}\n\n\nNo commitment loss term — the STE handles gradient flow through rounding."
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#llasa-overview",
+    "href": "fsq-llasa-inworld/slides.html#llasa-overview",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "LLaSA — Overview",
+    "text": "LLaSA — Overview\n\nLarge Language model based Speech synthesis with spontaneous Attributes\nLeverages pre-trained LLMs for text-to-speech\nModels spontaneous speech phenomena (fillers, pauses, laughter)\nCodec-based: audio \\rightarrow discrete tokens \\rightarrow LLM \\rightarrow audio"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#llasa-architecture",
+    "href": "fsq-llasa-inworld/slides.html#llasa-architecture",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "LLaSA — Architecture",
+    "text": "LLaSA — Architecture\n\n\n\nSpeech tokenizer: XCodec2 — audio to discrete tokens\nLanguage model: fine-tuned LLaMA\nVocoder: reconstructs waveform from tokens"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#llasa-token-representation",
+    "href": "fsq-llasa-inworld/slides.html#llasa-token-representation",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "LLaSA — Token Representation",
+    "text": "LLaSA — Token Representation\n\nXCodec2 produces a single-codebook token stream\nEach token represents ~20ms of audio\nText and speech tokens share the same vocabulary\n\n\n\\mathcal{V} = \\mathcal{V}_{\\text{text}} \\cup \\mathcal{V}_{\\text{speech}}\n\n\nThe LLM is trained autoregressively on interleaved text + speech"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#llasa-animated-derivation-example",
+    "href": "fsq-llasa-inworld/slides.html#llasa-animated-derivation-example",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "LLaSA — Animated Derivation Example",
+    "text": "LLaSA — Animated Derivation Example\nAutoregressive generation objective:\n\n\np(\\mathbf{s} \\mid \\mathbf{t}) = \\prod_{i=1}^{N} p(s_i \\mid s_{&lt;i}, \\mathbf{t})\n\n\n\n\n\\mathcal{L}_{\\text{AR}} = -\\sum_{i=1}^{N} \\log p(s_i \\mid s_{&lt;i}, \\mathbf{t})\n\n\n\n\n= -\\mathbb{E}_{(\\mathbf{t}, \\mathbf{s}) \\sim \\mathcal{D}} \\left[ \\sum_{i=1}^{N} \\log p_\\theta(s_i \\mid s_{&lt;i}, \\mathbf{t}) \\right]"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#inworld-context",
+    "href": "fsq-llasa-inworld/slides.html#inworld-context",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — Context",
+    "text": "Inworld — Context\n\nReal-time TTS for interactive AI characters\nLow latency requirement for conversational AI\nMust handle diverse speaking styles and emotions\nIntegration with game engines and virtual worlds"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#inworld-key-requirements",
+    "href": "fsq-llasa-inworld/slides.html#inworld-key-requirements",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — Key Requirements",
+    "text": "Inworld — Key Requirements\n\nStreaming: first audio chunk before full generation\nExpressiveness: emotion, emphasis, pacing\nConsistency: stable character voice across sessions\nEfficiency: run on consumer hardware"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#inworld-code-example",
+    "href": "fsq-llasa-inworld/slides.html#inworld-code-example",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — Code Example",
+    "text": "Inworld — Code Example\nfrom inworld import InworldClient\n\nclient = InworldClient(\n    api_key=\"your-api-key\",\n    scene=\"scenes/my-scene\"\n)\n\nresponse = client.send_text(\"Hello, adventurer!\")\naudio = response.audio  # streaming audio chunks"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#comparison",
+    "href": "fsq-llasa-inworld/slides.html#comparison",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Comparison",
+    "text": "Comparison\n\n\n\n\n\n\n\n\n\n\nFSQ\nLLaSA\nInworld\n\n\n\n\nType\nQuantizer\nTTS model\nTTS platform\n\n\nKey idea\nDeterministic rounding\nLLM-based codec TTS\nReal-time character TTS\n\n\nCodebook\nImplicit\nXCodec2\nProprietary\n\n\nOpen source\n✓\n✓\nPartial"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#key-takeaways",
+    "href": "fsq-llasa-inworld/slides.html#key-takeaways",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Key Takeaways",
+    "text": "Key Takeaways\n\nFSQ simplifies quantization — no codebook, no collapse, drop-in VQ replacement\nLLaSA shows LLMs can generate natural, spontaneous speech\nInworld brings expressive TTS to real-time interactive applications\nCommon thread: discrete audio tokens enable language-model approaches to speech"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#references",
+    "href": "fsq-llasa-inworld/slides.html#references",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "References",
+    "text": "References\n\nMentzer et al., “Finite Scalar Quantization: VQ-VAE Made Simple” (ICLR 2024)\nLLaSA paper and XCodec2\nInworld AI documentation"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#section",
+    "href": "fsq-llasa-inworld/slides.html#section",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "",
+    "text": "Thank you!\nQuestions?"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Presentations",
+    "section": "",
+    "text": "FSQ, LLaSA & Inworld TTS"
+  },
+  {
+    "objectID": "index.html#talks",
+    "href": "index.html#talks",
+    "title": "Presentations",
+    "section": "",
+    "text": "FSQ, LLaSA & Inworld TTS"
+  }
+]
