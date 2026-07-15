@@ -4,69 +4,140 @@ author: "Vladislav Stankov"
 format:
   revealjs:
     incremental: true
+    highlight-style: monokai    # or: github, dracula, zenburn, atom-one-dark, etc.
     chalkboard: true
-    theme: simple
+    theme: [default, custom.scss]
     slide-number: true
     width: 1920
     height: 1080
     html-math-method: katex
+    transition: zoom           # none, fade, slide, convex, concave, zoom
+    hide-cursor-time: 5000      # auto-hide cursor after ms of inactivity
+    pointer:
+      key: "p"
+      color: "#e63946"          # laser pointer (hold 'q' during presentation)
+      pointerSize: 18
 ---
 
 # Finite Scalar Quantization {background-color="#2d4059"}
 
-## Motivation
+## VQ Recap — Quantized VAE
 
-- Vector Quantization (VQ) is widely used in neural codecs
-- VQ suffers from **codebook collapse** — many codes go unused
-- **FSQ** replaces VQ with a simple, deterministic quantizer
-- No commitment loss, no EMA updates, no codebook
+- VAE with a **quantization bottleneck**: encoder $\rightarrow$ continuous latent $z_e$ $\rightarrow$ quantize $\rightarrow$ decoder
+- Quantization: map $z_e$ to the **nearest codebook entry** (argmin / nearest-neighbor)
 
-## FSQ — Core Idea
+::: {.fragment}
+$$
+z_q = e_k, \quad k = \arg\min_j \| z_e - e_j \|_2
+$$
+:::
 
-- Project latent $z \in \mathbb{R}^d$ to a bounded range via $\tanh$
-- Round each dimension to one of $L$ levels
+- Codebook $\mathcal{C} = \{e_k\}_{k=1}^{K}$ is a **learnable embedding table**
+- Argmin is not differentiable — use **STE**: copy gradients from decoder input straight to encoder output
+- VAE formulation holds exactly, but KL term is **constant** — we use a deterministic policy (argmin), not sampling
+- Training uses **reconstruction**, **codebook**, and **commitment** losses (sometimes EMA instead of codebook loss) — needed to make VQ-VAE learn and stabilize training
 
+## RVQ — Residual Vector Quantization
+
+- What if **one codebook is not enough**?
+- Naive fix: just make the codebook larger — but this **doesn't scale**; utilization drops sharply beyond $\sim 2^{11}$ entries (codebook collapse)
+- Better idea: quantize, compute the **residual**, quantize the residual, repeat
+
+::: {.fragment}
+$$
+r_0 = z_e, \quad z_q^{(i)} = \text{VQ}_i(r_{i-1}), \quad r_i = r_{i-1} - z_q^{(i)}
+$$
+:::
+
+- Final representation: $\hat{z} = \sum_{i=1}^{N} z_q^{(i)}$ — sum of $N$ codebook lookups
+- Much more **versatile** than single-codebook VQ
+
+::: {.fragment style="text-align: center;"}
+![](images/rvq-arch.png){height="400px"}
+:::
+
+## VQ & RVQ — Common Issues
+
+- A frame is a vector of codebook indices: $\mathbf{c} = [c_1, c_2, \dots, c_N]$
+- But $c_i$ depends on the residual from steps $1, \dots, i{-}1$
+
+::: {.fragment}
+$$
+c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\bigr)
+$$
+:::
+
+- **Codebooks are not independent** — the $i$-th code is meaningless without knowing all previous codes
+- Cannot predict the whole frame $\mathbf{c} = [c_1, \dots, c_N]$ at once — ideally need to predict each $c_i$ **autoregressively**, conditioned on $c_1, \dots, c_{i-1}$
+- **Dead codes**: some codebook entries are never selected — requires tracking utilization and **reinitialization** strategies
+- Training can be **unstable** — balancing reconstruction, commitment, and codebook losses is fragile (applies to both VQ and RVQ)
+- Motivates alternatives like **FSQ** that avoid these issues entirely
+
+## FSQ — Finite Scalar Quantization Overview
+
+- **Drop-in replacement** for VQ and RVQ (in theory)
+- **No additional losses** — no commitment loss, no codebook loss, no EMA
+- **No learned embedding tables** — the codebook is **implicit**, directly quantize the encoder's latent space
+- Still uses **STE** to pass gradients through to the encoder
+- Achieves very high utilization even for much larger codebooks: $\sim 2^{10}$ in VQ vs $\sim 2^{16}$ in FSQ
+
+## FSQ — A New Quantization Paradigm
+
+- Unlike VQ where $d \geq 512$, FSQ uses a **very small** encoder output: $d < 10$, so $z \in \mathbb{R}^d$
+- Each dimension is **bounded** to $L_i$ discrete levels via rounding:
+
+::: {.fragment}
 $$
 \hat{z}_i = \left\lfloor \frac{L_i - 1}{2} \cdot \tanh(z_i) \right\rceil
 $$
-
-- Codebook size = $\prod_{i=1}^{d} L_i$ — **implicit**, no learned embeddings
-- Straight-through estimator (STE) for gradients
-
-## FSQ vs VQ
-
-:::: {.columns}
-::: {.column width="50%"}
-### VQ
-
-- Learned codebook $\mathcal{C} = \{e_k\}_{k=1}^{K}$
-- Nearest-neighbor lookup
-- Commitment + EMA losses
-- Codebook collapse risk
 :::
 
-::: {.column width="50%"}
-### FSQ
+- Example: $d = 3$, $L = 3$ $\Rightarrow$ each dimension in $\{-1, 0, 1\}$ $\Rightarrow$ **implicit codebook** of size $L^d = 3^3 = 27$
+- We can **enumerate all possible vectors** — the codebook is the full Cartesian product: $\mathcal{C} = \{1, 2, \dots, L^d\}$
+- In general $L_i$ can differ per dimension — codebook size is $\prod_{i=1}^{d} L_i$
 
-- **No** learned codebook
-- Deterministic rounding
-- **No** auxiliary losses
-- Full codebook utilization
-:::
-::::
-
-## FSQ — Training Objective
-
-::: {.nonincremental}
-The encoder-decoder is trained end-to-end:
+::: {.fragment style="text-align: center;"}
+![](images/vq-vs-fsq.png){height="350px"}
 :::
 
-$$
-\mathcal{L} = \underbrace{\|x - \hat{x}\|_2^2}_{\text{reconstruction}} + \lambda \cdot \mathcal{L}_{\text{perceptual}}
-$$
+## VQ vs FSQ — Intuition
+
+- VQ is potentially **more expressive** — it learns where to place each code vector freely in the latent space via separate embedding vectors
+- FSQ is **more constrained** — the latent space is bounded, and the encoder must fit its representation into a fixed grid
+- This difference is mostly **theoretical** — both models are highly nonlinear, and with powerful enough encoders the expressiveness gap shrinks
+
+::: {.fragment style="text-align: center;"}
+![](images/vq-vs-fsq-vis.png){height="450px"}
+:::
+
+## FSQ vs VQ — Evaluation
+
+- Train VQ and FSQ on images, then generate images with **MaskGIT** (class-conditional BERT, predicts codes)
+- **Reconstruction FID**: Fréchet Inception Distance between real images and their reconstructions
+- **Sampling FID**: FID of images generated by MaskGIT using the learned codes
+- **Codebook usage**: fraction of codewords used at least once
+- **Compression cost**: how hard is it for the model to use this encoding — is codeword usage close to uniform?
+
+::: {.fragment style="text-align: center;"}
+![](images/fsq-vs-vq-eval.png){height="700px"}
+:::
+
+## MaskGIT Results — FSQ vs VQ vs ADM
+
+- FSQ config: $L = [8, 5, 5, 5]$ $\Rightarrow$ codebook size $= 8 \times 5^3 = 1000$
+- **Classifier-Free Guidance (CFG)**: MaskGIT trained with 10% of labels replaced by MASK; at inference, combine class-conditional and unconditional logits:
 
 ::: {.fragment}
-No commitment loss term — the STE handles gradient flow through rounding.
+$$
+\ell' = \ell_c + \alpha(\ell_c - \ell_\emptyset)
+$$
+:::
+
+- **Precision & Recall**: via a learned classifier — how well do generated images match real distributions
+- Baseline: **ADM** (diffusion model) — FSQ + MaskGIT is competitive with diffusion-based generation
+
+::: {.fragment style="text-align: center;"}
+![](images/maskgit-results.png){height="550px"}
 :::
 
 # LLaSA {background-color="#34495e"}
