@@ -53,7 +53,7 @@ $$
 - Much more **versatile** than single-codebook VQ
 
 ::: {.fragment style="text-align: center;"}
-![](images/rvq-arch.png){height="400px"}
+![](images/rvq-arch.png){height="450px"}
 :::
 
 ## VQ & RVQ — Common Issues
@@ -97,7 +97,7 @@ $$
 - In general $L_i$ can differ per dimension — codebook size is $\prod_{i=1}^{d} L_i$
 
 ::: {.fragment style="text-align: center;"}
-![](images/vq-vs-fsq.png){height="350px"}
+![](images/vq-vs-fsq.png){height="400px"}
 :::
 
 ## VQ vs FSQ — Intuition
@@ -107,7 +107,7 @@ $$
 - This difference is mostly **theoretical** — both models are highly nonlinear, and with powerful enough encoders the expressiveness gap shrinks
 
 ::: {.fragment style="text-align: center;"}
-![](images/vq-vs-fsq-vis.png){height="450px"}
+![](images/vq-vs-fsq-vis.png){height="500px"}
 :::
 
 ## FSQ vs VQ — Evaluation
@@ -119,7 +119,7 @@ $$
 - **Compression cost**: how hard is it for the model to use this encoding — is codeword usage close to uniform?
 
 ::: {.fragment style="text-align: center;"}
-![](images/fsq-vs-vq-eval.png){height="700px"}
+![](images/fsq-vs-vq-eval.png){height="750px"}
 :::
 
 ## MaskGIT Results — FSQ vs VQ vs ADM
@@ -137,7 +137,7 @@ $$
 - Baseline: **ADM** (diffusion model) — FSQ + MaskGIT is competitive with diffusion-based generation
 
 ::: {.fragment style="text-align: center;"}
-![](images/maskgit-results.png){height="550px"}
+![](images/maskgit-results.png){height="600px"}
 :::
 
 # LLaSA {background-color="#34495e"}
