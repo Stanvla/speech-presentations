@@ -2,7 +2,11 @@ _site/
 .quarto/
 **/slides_files/
 *.html
+WORKFLOW.md
 
 # OS
 .DS_Store
 Thumbs.db
+
+/.quarto/
+**/*.quarto_ipynb
