@@ -1,31 +1,59 @@
 [
   {
-    "objectID": "fsq-llasa-inworld/slides.html#motivation",
-    "href": "fsq-llasa-inworld/slides.html#motivation",
+    "objectID": "fsq-llasa-inworld/slides.html#vq-recap-quantized-vae",
+    "href": "fsq-llasa-inworld/slides.html#vq-recap-quantized-vae",
     "title": "FSQ, LLaSA & Inworld TTS",
-    "section": "Motivation",
-    "text": "Motivation\n\nVector Quantization (VQ) is widely used in neural codecs\nVQ suffers from codebook collapse — many codes go unused\nFSQ replaces VQ with a simple, deterministic quantizer\nNo commitment loss, no EMA updates, no codebook"
+    "section": "VQ Recap — Quantized VAE",
+    "text": "VQ Recap — Quantized VAE\n\nVAE with a quantization bottleneck: encoder \\rightarrow continuous latent z_e \\rightarrow quantize \\rightarrow decoder\nQuantization: map z_e to the nearest codebook entry (argmin / nearest-neighbor)\n\n\n\nz_q = e_k, \\quad k = \\arg\\min_j \\| z_e - e_j \\|_2\n\n\n\nCodebook \\mathcal{C} = \\{e_k\\}_{k=1}^{K} is a learnable embedding table\nArgmin is not differentiable — use STE: copy gradients from decoder input straight to encoder output\nVAE formulation holds exactly, but KL term is constant — we use a deterministic policy (argmin), not sampling\nTraining uses reconstruction, codebook, and commitment losses (sometimes EMA instead of codebook loss) — needed to make VQ-VAE learn and stabilize training"
   },
   {
-    "objectID": "fsq-llasa-inworld/slides.html#fsq-core-idea",
-    "href": "fsq-llasa-inworld/slides.html#fsq-core-idea",
+    "objectID": "fsq-llasa-inworld/slides.html#rvq-residual-vector-quantization",
+    "href": "fsq-llasa-inworld/slides.html#rvq-residual-vector-quantization",
     "title": "FSQ, LLaSA & Inworld TTS",
-    "section": "FSQ — Core Idea",
-    "text": "FSQ — Core Idea\n\nProject latent z \\in \\mathbb{R}^d to a bounded range via \\tanh\nRound each dimension to one of L levels\n\n\n\\hat{z}_i = \\left\\lfloor \\frac{L_i - 1}{2} \\cdot \\tanh(z_i) \\right\\rceil\n\n\nCodebook size = \\prod_{i=1}^{d} L_i — implicit, no learned embeddings\nStraight-through estimator (STE) for gradients"
+    "section": "RVQ — Residual Vector Quantization",
+    "text": "RVQ — Residual Vector Quantization\n\nWhat if one codebook is not enough?\nNaive fix: just make the codebook larger — but this doesn’t scale; utilization drops sharply beyond \\sim 2^{11} entries (codebook collapse)\nBetter idea: quantize, compute the residual, quantize the residual, repeat\n\n\n\nr_0 = z_e, \\quad z_q^{(i)} = \\text{VQ}_i(r_{i-1}), \\quad r_i = r_{i-1} - z_q^{(i)}\n\n\n\nFinal representation: \\hat{z} = \\sum_{i=1}^{N} z_q^{(i)} — sum of N codebook lookups\nMuch more versatile than single-codebook VQ"
   },
   {
-    "objectID": "fsq-llasa-inworld/slides.html#fsq-vs-vq",
-    "href": "fsq-llasa-inworld/slides.html#fsq-vs-vq",
+    "objectID": "fsq-llasa-inworld/slides.html#vq-rvq-common-issues",
+    "href": "fsq-llasa-inworld/slides.html#vq-rvq-common-issues",
     "title": "FSQ, LLaSA & Inworld TTS",
-    "section": "FSQ vs VQ",
-    "text": "FSQ vs VQ\n\n\nVQ\n\nLearned codebook \\mathcal{C} = \\{e_k\\}_{k=1}^{K}\nNearest-neighbor lookup\nCommitment + EMA losses\nCodebook collapse risk\n\n\nFSQ\n\nNo learned codebook\nDeterministic rounding\nNo auxiliary losses\nFull codebook utilization"
+    "section": "VQ & RVQ — Common Issues",
+    "text": "VQ & RVQ — Common Issues\n\nA frame is a vector of codebook indices: \\mathbf{c} = [c_1, c_2, \\dots, c_N]\nBut c_i depends on the residual from steps 1, \\dots, i{-}1\n\n\n\nc_i = f\\bigl(r_{i-1}\\bigr) = f\\bigl(z_e - \\textstyle\\sum_{j=1}^{i-1} e_{c_j}\\bigr)\n\n\n\nCodebooks are not independent — the i-th code is meaningless without knowing all previous codes\nCannot predict the whole frame \\mathbf{c} = [c_1, \\dots, c_N] at once — ideally need to predict each c_i autoregressively, conditioned on c_1, \\dots, c_{i-1}\nDead codes: some codebook entries are never selected — requires tracking utilization and reinitialization strategies\nTraining can be unstable — balancing reconstruction, commitment, and codebook losses is fragile (applies to both VQ and RVQ)\nMotivates alternatives like FSQ that avoid these issues entirely"
   },
   {
-    "objectID": "fsq-llasa-inworld/slides.html#fsq-training-objective",
-    "href": "fsq-llasa-inworld/slides.html#fsq-training-objective",
+    "objectID": "fsq-llasa-inworld/slides.html#fsq-finite-scalar-quantization-overview",
+    "href": "fsq-llasa-inworld/slides.html#fsq-finite-scalar-quantization-overview",
     "title": "FSQ, LLaSA & Inworld TTS",
-    "section": "FSQ — Training Objective",
-    "text": "FSQ — Training Objective\nThe encoder-decoder is trained end-to-end:\n\n\\mathcal{L} = \\underbrace{\\|x - \\hat{x}\\|_2^2}_{\\text{reconstruction}} + \\lambda \\cdot \\mathcal{L}_{\\text{perceptual}}\n\n\nNo commitment loss term — the STE handles gradient flow through rounding."
+    "section": "FSQ — Finite Scalar Quantization Overview",
+    "text": "FSQ — Finite Scalar Quantization Overview\n\nDrop-in replacement for VQ and RVQ (in theory)\nNo additional losses — no commitment loss, no codebook loss, no EMA\nNo learned embedding tables — the codebook is implicit, directly quantize the encoder’s latent space\nStill uses STE to pass gradients through to the encoder\nAchieves very high utilization even for much larger codebooks: \\sim 2^{10} in VQ vs \\sim 2^{16} in FSQ"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#fsq-a-new-quantization-paradigm",
+    "href": "fsq-llasa-inworld/slides.html#fsq-a-new-quantization-paradigm",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "FSQ — A New Quantization Paradigm",
+    "text": "FSQ — A New Quantization Paradigm\n\nUnlike VQ where d \\geq 512, FSQ uses a very small encoder output: d &lt; 10, so z \\in \\mathbb{R}^d\nEach dimension is bounded to L_i discrete levels via rounding:\n\n\n\n\\hat{z}_i = \\left\\lfloor \\frac{L_i - 1}{2} \\cdot \\tanh(z_i) \\right\\rceil\n\n\n\nExample: d = 3, L = 3 \\Rightarrow each dimension in \\{-1, 0, 1\\} \\Rightarrow implicit codebook of size L^d = 3^3 = 27\nWe can enumerate all possible vectors — the codebook is the full Cartesian product: \\mathcal{C} = \\{1, 2, \\dots, L^d\\}\nIn general L_i can differ per dimension — codebook size is \\prod_{i=1}^{d} L_i"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#vq-vs-fsq-intuition",
+    "href": "fsq-llasa-inworld/slides.html#vq-vs-fsq-intuition",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "VQ vs FSQ — Intuition",
+    "text": "VQ vs FSQ — Intuition\n\nVQ is potentially more expressive — it learns where to place each code vector freely in the latent space via separate embedding vectors\nFSQ is more constrained — the latent space is bounded, and the encoder must fit its representation into a fixed grid\nThis difference is mostly theoretical — both models are highly nonlinear, and with powerful enough encoders the expressiveness gap shrinks"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#fsq-vs-vq-evaluation",
+    "href": "fsq-llasa-inworld/slides.html#fsq-vs-vq-evaluation",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "FSQ vs VQ — Evaluation",
+    "text": "FSQ vs VQ — Evaluation\n\nTrain VQ and FSQ on images, then generate images with MaskGIT (class-conditional BERT, predicts codes)\nReconstruction FID: Fréchet Inception Distance between real images and their reconstructions\nSampling FID: FID of images generated by MaskGIT using the learned codes\nCodebook usage: fraction of codewords used at least once\nCompression cost: how hard is it for the model to use this encoding — is codeword usage close to uniform?"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/slides.html#maskgit-results-fsq-vs-vq-vs-adm",
+    "href": "fsq-llasa-inworld/slides.html#maskgit-results-fsq-vs-vq-vs-adm",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "MaskGIT Results — FSQ vs VQ vs ADM",
+    "text": "MaskGIT Results — FSQ vs VQ vs ADM\n\nFSQ config: L = [8, 5, 5, 5] \\Rightarrow codebook size = 8 \\times 5^3 = 1000\nClassifier-Free Guidance (CFG): MaskGIT trained with 10% of labels replaced by MASK; at inference, combine class-conditional and unconditional logits:\n\n\n\n\\ell' = \\ell_c + \\alpha(\\ell_c - \\ell_\\emptyset)\n\n\n\nPrecision & Recall: via a learned classifier — how well do generated images match real distributions\nBaseline: ADM (diffusion model) — FSQ + MaskGIT is competitive with diffusion-based generation"
   },
   {
     "objectID": "fsq-llasa-inworld/slides.html#llasa-overview",
@@ -103,6 +131,69 @@
     "title": "FSQ, LLaSA & Inworld TTS",
     "section": "",
     "text": "Thank you!\nQuestions?"
+  },
+  {
+    "objectID": "WORKFLOW.html",
+    "href": "WORKFLOW.html",
+    "title": "Workflow Cheatsheet",
+    "section": "",
+    "text": "cd ~/Projects/Presentations\nquarto preview                    # live-reloads in browser\nquarto preview fsq-llasa-inworld/slides.qmd   # preview single deck\n\n\n\n\nCreate a new folder with slides.qmd and images/:\nmkdir -p new-talk/images\nAdd YAML front matter in new-talk/slides.qmd:\n---\ntitle: \"Talk Title\"\nauthor: \"Stanvla\"\nformat:\n  revealjs:\n    theme: simple\n    slide-number: true\n    width: 1920\n    height: 1080\n---\nAdd a link in index.qmd:\n- [Talk Title](new-talk/slides.qmd)\n\n\n\n\n\nPut images in &lt;deck&gt;/images/ next to slides.qmd\nUse relative paths only:\n![](images/diagram.png)\n![Caption](images/arch.png){width=\"60%\"}\nGIFs animate automatically\n\n\n\n\ngit add .\ngit commit -m \"describe change\"\ngit push origin main              # backup source to main branch\nquarto publish gh-pages           # renders site → pushes to gh-pages branch\nQuarto handles everything: renders all decks, copies images, pushes the built site to the gh-pages branch. GitHub serves it automatically.\nYour site lives at: https://stanvla.github.io/speech-presentations/ Each deck at: https://stanvla.github.io/speech-presentations/fsq-llasa-inworld/slides.html\n\n\n\nAdd embed-resources: true under format: revealjs: in a deck’s front matter. Then:\nquarto render fsq-llasa-inworld/slides.qmd\nThe resulting slides.html is fully self-contained (images base64-embedded). AirDrop it anywhere.\n\n\n\nquarto render fsq-llasa-inworld/slides.qmd --profile handout\nUses _quarto-handout.yml to disable incremental/chalkboard.\n\n\n\nOption A — built-in print (no extra tools):\n# Open the deck in browser, then append ?print-pdf to the URL:\n# http://localhost:4848/fsq-llasa-inworld/slides.html?print-pdf\n# Then Ctrl/Cmd+P → Save as PDF (set margins to None, enable Background graphics)\nOption B — automated via decktape (needs Node.js):\nnpm install -g decktape\nquarto render fsq-llasa-inworld/slides.qmd\ndecktape reveal fsq-llasa-inworld/slides.html fsq-llasa-inworld/slides.pdf\nOption C — render directly to PDF format (beamer, not revealjs):\nquarto render fsq-llasa-inworld/slides.qmd --to pdf\nThis produces a Beamer PDF (LaTeX-based, different layout from slides). Requires a TeX installation (quarto install tinytex).\n\n\n\n\nNever use absolute paths for images (/Users/... or /images/... breaks on Pages)\nDon’t commit build artifacts — _site/, slides_files/, .quarto/ are gitignored\nOne quarto publish gh-pages deploys everything (all decks, landing page, images)"
+  },
+  {
+    "objectID": "WORKFLOW.html#day-to-day-edit-preview-locally",
+    "href": "WORKFLOW.html#day-to-day-edit-preview-locally",
+    "title": "Workflow Cheatsheet",
+    "section": "",
+    "text": "cd ~/Projects/Presentations\nquarto preview                    # live-reloads in browser\nquarto preview fsq-llasa-inworld/slides.qmd   # preview single deck"
+  },
+  {
+    "objectID": "WORKFLOW.html#add-a-new-talk",
+    "href": "WORKFLOW.html#add-a-new-talk",
+    "title": "Workflow Cheatsheet",
+    "section": "",
+    "text": "Create a new folder with slides.qmd and images/:\nmkdir -p new-talk/images\nAdd YAML front matter in new-talk/slides.qmd:\n---\ntitle: \"Talk Title\"\nauthor: \"Stanvla\"\nformat:\n  revealjs:\n    theme: simple\n    slide-number: true\n    width: 1920\n    height: 1080\n---\nAdd a link in index.qmd:\n- [Talk Title](new-talk/slides.qmd)"
+  },
+  {
+    "objectID": "WORKFLOW.html#images",
+    "href": "WORKFLOW.html#images",
+    "title": "Workflow Cheatsheet",
+    "section": "",
+    "text": "Put images in &lt;deck&gt;/images/ next to slides.qmd\nUse relative paths only:\n![](images/diagram.png)\n![Caption](images/arch.png){width=\"60%\"}\nGIFs animate automatically"
+  },
+  {
+    "objectID": "WORKFLOW.html#publish-to-github-pages",
+    "href": "WORKFLOW.html#publish-to-github-pages",
+    "title": "Workflow Cheatsheet",
+    "section": "",
+    "text": "git add .\ngit commit -m \"describe change\"\ngit push origin main              # backup source to main branch\nquarto publish gh-pages           # renders site → pushes to gh-pages branch\nQuarto handles everything: renders all decks, copies images, pushes the built site to the gh-pages branch. GitHub serves it automatically.\nYour site lives at: https://stanvla.github.io/speech-presentations/ Each deck at: https://stanvla.github.io/speech-presentations/fsq-llasa-inworld/slides.html"
+  },
+  {
+    "objectID": "WORKFLOW.html#offline-single-file-backup",
+    "href": "WORKFLOW.html#offline-single-file-backup",
+    "title": "Workflow Cheatsheet",
+    "section": "",
+    "text": "Add embed-resources: true under format: revealjs: in a deck’s front matter. Then:\nquarto render fsq-llasa-inworld/slides.qmd\nThe resulting slides.html is fully self-contained (images base64-embedded). AirDrop it anywhere."
+  },
+  {
+    "objectID": "WORKFLOW.html#handout-mode-no-animations",
+    "href": "WORKFLOW.html#handout-mode-no-animations",
+    "title": "Workflow Cheatsheet",
+    "section": "",
+    "text": "quarto render fsq-llasa-inworld/slides.qmd --profile handout\nUses _quarto-handout.yml to disable incremental/chalkboard."
+  },
+  {
+    "objectID": "WORKFLOW.html#export-to-pdf",
+    "href": "WORKFLOW.html#export-to-pdf",
+    "title": "Workflow Cheatsheet",
+    "section": "",
+    "text": "Option A — built-in print (no extra tools):\n# Open the deck in browser, then append ?print-pdf to the URL:\n# http://localhost:4848/fsq-llasa-inworld/slides.html?print-pdf\n# Then Ctrl/Cmd+P → Save as PDF (set margins to None, enable Background graphics)\nOption B — automated via decktape (needs Node.js):\nnpm install -g decktape\nquarto render fsq-llasa-inworld/slides.qmd\ndecktape reveal fsq-llasa-inworld/slides.html fsq-llasa-inworld/slides.pdf\nOption C — render directly to PDF format (beamer, not revealjs):\nquarto render fsq-llasa-inworld/slides.qmd --to pdf\nThis produces a Beamer PDF (LaTeX-based, different layout from slides). Requires a TeX installation (quarto install tinytex)."
+  },
+  {
+    "objectID": "WORKFLOW.html#key-rules",
+    "href": "WORKFLOW.html#key-rules",
+    "title": "Workflow Cheatsheet",
+    "section": "",
+    "text": "Never use absolute paths for images (/Users/... or /images/... breaks on Pages)\nDon’t commit build artifacts — _site/, slides_files/, .quarto/ are gitignored\nOne quarto publish gh-pages deploys everything (all decks, landing page, images)"
   },
   {
     "objectID": "index.html",
