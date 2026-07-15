@@ -265,7 +265,7 @@ r_0 = z_e, \quad z_q^{(i)} = \text{VQ}_i(r_{i-1}), \quad r_i = r_{i-1} - z_q^{(i
 <li class="fragment">Much more <strong>versatile</strong> than single-codebook VQ</li>
 </ul>
 <div class="fragment" style="text-align: center;">
-<p><img data-src="images/rvq-arch.png" height="400"></p>
+<p><img data-src="images/rvq-arch.png" height="450"></p>
 </div>
 </section>
 <section id="vq-rvq-common-issues" class="slide level2">
@@ -314,7 +314,7 @@ c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\big
 <li class="fragment">In general <span class="math inline">L_i</span> can differ per dimension — codebook size is <span class="math inline">\prod_{i=1}^{d} L_i</span></li>
 </ul>
 <div class="fragment" style="text-align: center;">
-<p><img data-src="images/vq-vs-fsq.png" height="350"></p>
+<p><img data-src="images/vq-vs-fsq.png" height="400"></p>
 </div>
 </section>
 <section id="vq-vs-fsq-intuition" class="slide level2">
@@ -325,7 +325,7 @@ c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\big
 <li class="fragment">This difference is mostly <strong>theoretical</strong> — both models are highly nonlinear, and with powerful enough encoders the expressiveness gap shrinks</li>
 </ul>
 <div class="fragment" style="text-align: center;">
-<p><img data-src="images/vq-vs-fsq-vis.png" height="450"></p>
+<p><img data-src="images/vq-vs-fsq-vis.png" height="500"></p>
 </div>
 </section>
 <section id="fsq-vs-vq-evaluation" class="slide level2">
@@ -338,7 +338,7 @@ c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\big
 <li class="fragment"><strong>Compression cost</strong>: how hard is it for the model to use this encoding — is codeword usage close to uniform?</li>
 </ul>
 <div class="fragment" style="text-align: center;">
-<p><img data-src="images/fsq-vs-vq-eval.png" height="700"></p>
+<p><img data-src="images/fsq-vs-vq-eval.png" height="750"></p>
 </div>
 </section>
 <section id="maskgit-results-fsq-vs-vq-vs-adm" class="slide level2">
@@ -357,7 +357,7 @@ c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\big
 <li class="fragment">Baseline: <strong>ADM</strong> (diffusion model) — FSQ + MaskGIT is competitive with diffusion-based generation</li>
 </ul>
 <div class="fragment" style="text-align: center;">
-<p><img data-src="images/maskgit-results.png" height="550"></p>
+<p><img data-src="images/maskgit-results.png" height="600"></p>
 </div>
 </section></section>
 <section>
