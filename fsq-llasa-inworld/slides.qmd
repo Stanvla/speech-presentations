@@ -3,7 +3,7 @@ title: "FSQ, LLaSA & Inworld TTS"
 author: "Vladislav Stankov"
 format:
   revealjs:
-    incremental: true
+    incremental: false
     highlight-style: monokai    # or: github, dracula, zenburn, atom-one-dark, etc.
     chalkboard: true
     theme: [default, custom.scss]
@@ -39,8 +39,8 @@ $$
 
 ## RVQ — Residual Vector Quantization
 
-- What if **one codebook is not enough**?
-- Naive fix: just make the codebook larger — but this **doesn't scale**; utilization drops sharply beyond $\sim 2^{11}$ entries (codebook collapse)
+- What if **one codebook is not enough**? — single VQ reconstruction is lossy, the quantization error can be significant
+- Naive fix: just make the codebook larger — but this **doesn't scale**; utilization drops sharply beyond $\sim 2^{11}$ entries (dead codes)
 - Better idea: quantize, compute the **residual**, quantize the residual, repeat
 
 ::: {.fragment}
@@ -53,7 +53,7 @@ $$
 - Much more **versatile** than single-codebook VQ
 
 ::: {.fragment style="text-align: center;"}
-![](images/rvq-arch.png){height="450px"}
+![](images/rvq-arch.png){height="480px"}
 :::
 
 ## VQ & RVQ — Common Issues
@@ -83,7 +83,7 @@ $$
 
 ## FSQ — A New Quantization Paradigm
 
-- Unlike VQ where $d \geq 512$, FSQ uses a **very small** encoder output: $d < 10$, so $z \in \mathbb{R}^d$
+- Unlike VQ where $d \geq 512$, FSQ uses a **very small** encoder output: $d < 10$, so $z_e \in \mathbb{R}^d$
 - Each dimension is **bounded** to $L_i$ discrete levels via rounding:
 
 ::: {.fragment}
@@ -97,7 +97,7 @@ $$
 - In general $L_i$ can differ per dimension — codebook size is $\prod_{i=1}^{d} L_i$
 
 ::: {.fragment style="text-align: center;"}
-![](images/vq-vs-fsq.png){height="400px"}
+![](images/vq-vs-fsq.png){height="450px"}
 :::
 
 ## VQ vs FSQ — Intuition
@@ -119,137 +119,259 @@ $$
 - **Compression cost**: how hard is it for the model to use this encoding — is codeword usage close to uniform?
 
 ::: {.fragment style="text-align: center;"}
-![](images/fsq-vs-vq-eval.png){height="750px"}
+![](images/fsq-vs-vq-eval.png){height="700px"}
 :::
 
-## MaskGIT Results — FSQ vs VQ vs ADM
-
-- FSQ config: $L = [8, 5, 5, 5]$ $\Rightarrow$ codebook size $= 8 \times 5^3 = 1000$
-- **Classifier-Free Guidance (CFG)**: MaskGIT trained with 10% of labels replaced by MASK; at inference, combine class-conditional and unconditional logits:
-
-::: {.fragment}
-$$
-\ell' = \ell_c + \alpha(\ell_c - \ell_\emptyset)
-$$
-:::
-
-- **Precision & Recall**: via a learned classifier — how well do generated images match real distributions
-- Baseline: **ADM** (diffusion model) — FSQ + MaskGIT is competitive with diffusion-based generation
-
-::: {.fragment style="text-align: center;"}
-![](images/maskgit-results.png){height="600px"}
-:::
 
 # LLaSA {background-color="#34495e"}
 
 ## LLaSA — Overview
 
-- **L**arge **La**nguage model based **S**peech synthesis with spontaneous **A**ttributes
-- Leverages pre-trained LLMs for text-to-speech
-- Models spontaneous speech phenomena (fillers, pauses, laughter)
-- Codec-based: audio $\rightarrow$ discrete tokens $\rightarrow$ LLM $\rightarrow$ audio
+- Many zero-shot voice cloning approaches invent **custom architectures / pipelines** to improve quality
+- LLaSA: first attempt to use a **traditional LLM approach** for speech — decoder-only model + audio tokenizer
+- Made possible by **FSQ**: no need to change the LLM at all, just **next-token prediction**
+- Instead of studying architecture choices, they invest in understanding **scaling principles**: scale compute during training or during inference
+- One of the first papers to measure how **scaling inference compute** can significantly improve output quality
 
-## LLaSA — Architecture
+## LLaSA — Design
+
+- **Backbones**: LLaMA 3.2 (1B, 3B) and LLaMA 3.1 (8B) with extended vocabulary
+- LLM trained on quadruples: *(prompt text, text to generate, audio prompt, audio to generate)* — loss computed **only on audio tokens**
+- Target languages: **English and Chinese** (bilingual)
+- Dataset sizes: **80k, 160k, 250k hours**
+- **XCodec2**: replaces RVQ with FSQ; decoder follows **Vocos** — transformer predicting STFT magnitude & phase + iSTFT to generate audio
+- Audio tokenizer trained on **150k hours** (MLS + Emilia), 16 kHz, codebook size **65k**, covering **10 languages** (Asian and European)
+
+## XCodec2 — Results
+
+::: {style="text-align: center;"}
+![](images/xcodec2-results.png){height="600px"}
+:::
+
+- **Encodec**: 8 codebooks, 75 Hz frame rate, bitrate $= \log_2(1024) \times 8 \times 75 = 6$ kbps
+- **DAC**: 8 codebooks × 50 Hz, bitrate $= \log_2(1024) \times 12 \times 50 = 6$ kbps
+- **XCodec2**: single codebook → **0.8 kbps**; BigCodec → 1.04 kbps
+- Models with very low kbps achieve **UTMOS scores higher than ground truth** — the decoder acts as a **generator**, not just a reconstructor
+- However, **PESQ and speaker similarity (SIM)** are usually lower at low bitrates compared to high-bitrate models
+
+## LLaSA — Training Scaling
+
+Evaluation protocol borrowed from **BASE TTS**:
+
+<table style="width:100%; table-layout:fixed; font-size: 0.65em;">
+<colgroup>
+<col style="width:12%">
+<col style="width:35%">
+<col style="width:16%">
+<col style="width:21%">
+<col style="width:16%">
+</colgroup>
+<thead>
+<tr><th>Category</th><th>Example</th><th>1 (Bad)</th><th>2 (Ok)</th><th>3 (Good)</th></tr>
+</thead>
+<tbody>
+<tr><td>Compound Nouns</td><td>"stone-built quaint countryside holiday cottage"</td><td>Fails to recognise</td><td>Unnatural stress</td><td>Natural phrasal stress</td></tr>
+<tr><td>Emotions</td><td>"Oh my gosh! Are we really going to the Maldives?"</td><td>No audible emotion</td><td>Present but insufficient</td><td>Correct recognition</td></tr>
+<tr><td>Foreign Words</td><td>"mise en place … pièce de résistance"</td><td>Incorrect pronunciation</td><td>Foreign accent, not quite right</td><td>Correct rendering</td></tr>
+<tr><td>Paralinguistics</td><td>"Shh, Lucy, shhh, we mustn't wake…"</td><td>No recognition</td><td>Distinct but unnatural</td><td>Natural rendering</td></tr>
+<tr><td>Punctuations</td><td>"Emergency @ home; call ASAP! … #familymatters"</td><td>Glitches on # or &amp;</td><td>No glitch, incorrect</td><td>Correct pausing</td></tr>
+<tr><td>Questions</td><td>"will the ministers find the answers in time?"</td><td>Wrong intonation</td><td>Largely correct</td><td>Correct intonation</td></tr>
+<tr><td>Syntactic</td><td>"The movie that De Moya … was a box-office hit"</td><td>Fails to parse</td><td>Parses but unnatural</td><td>Correct &amp; natural</td></tr>
+</tbody>
+</table>
+
+<div style="margin-top: 2em;"></div>
+
+::: {.fragment .nonincremental style="font-size: 1em;"}
+- Foreign words, compound nouns → **data**; Punctuation, syntactic complexity → **model size**; Emotions, paralinguistics → **both**
+:::
 
 :::: {.columns}
-::: {.column width="55%"}
-
-- **Speech tokenizer**: XCodec2 — audio to discrete tokens
-- **Language model**: fine-tuned LLaMA
-- **Vocoder**: reconstructs waveform from tokens
-
+::: {.column width="60%"}
+::: {.fragment style="text-align: center;"}
+![](images/llasa-training-scaling.png){height="300px"}
 :::
-::: {.column width="45%"}
-
-<!-- Replace with your own architecture diagram -->
-<!-- ![](images/llasa-arch.png) -->
-
+:::
+::: {.column width="40%"}
+::: {.fragment style="text-align: center;"}
+![](images/base-tts-training-scaling.png){height="320px"}
+:::
 :::
 ::::
 
-## LLaSA — Token Representation
-
-- XCodec2 produces a single-codebook token stream
-- Each token represents ~20ms of audio
-- Text and speech tokens share the same vocabulary
-
-$$
-\mathcal{V} = \mathcal{V}_{\text{text}} \cup \mathcal{V}_{\text{speech}}
-$$
-
-- The LLM is trained autoregressively on interleaved text + speech
-
-## LLaSA — Animated Derivation Example
-
-::: {.nonincremental}
-Autoregressive generation objective:
+::: {.fragment .nonincremental style="font-size: 1em;"}
+- BASE TTS: trained **from scratch**; **Small** 150M + 1k hrs, **Base** 400M + 10k hrs, **Large** 1B + 100k hrs
 :::
 
-::: {.fragment}
-$$
-p(\mathbf{s} \mid \mathbf{t}) = \prod_{i=1}^{N} p(s_i \mid s_{<i}, \mathbf{t})
-$$
+## LLaSA — Inference Scaling
+
+::: {.nonincremental style="font-size: 0.85em;"}
+Inference compute scaling — three strategies:
 :::
 
-::: {.fragment}
-$$
-\mathcal{L}_{\text{AR}} = -\sum_{i=1}^{N} \log p(s_i \mid s_{<i}, \mathbf{t})
-$$
+- **PRM** (Process Reward Model): beam search during generation — $M$ beams × $N$ candidates, generate ~0.5s chunks, keep top $M$, continue
+- **ORM** (Output Reward Model): generate $M \times N$ candidates (to match beam search budget), select best by reward (SIM, WER)
+- **Partial PRM**: use PRM for first ~2 seconds, then switch to ORM for the remainder (generate rest, choose best)
+
+::: {.fragment style="text-align: center;"}
+![](images/llasa-inference-scalining.png){height="520px"}
 :::
 
-::: {.fragment}
-$$
-= -\mathbb{E}_{(\mathbf{t}, \mathbf{s}) \sim \mathcal{D}} \left[ \sum_{i=1}^{N} \log p_\theta(s_i \mid s_{<i}, \mathbf{t}) \right]
-$$
+## LLaSA — Final Results
+
+::: {style="text-align: center;"}
+![](images/llasa-final-results.png){height="800px"}
 :::
+
+- Using inference scaling is **not a fair comparison** against baselines (they don't use it)
+- But it demonstrates how we can **push quality further** at the cost of extra compute
 
 # Inworld TTS {background-color="#1a5276"}
 
-## Inworld — Context
+## Inworld — LLaSA Maxing
 
-- Real-time TTS for interactive AI characters
-- Low latency requirement for conversational AI
-- Must handle diverse speaking styles and emotions
-- Integration with game engines and virtual worlds
+- Extends the LLaSA idea (pure LLM machinery) with full training pipeline: **pretraining** (1M hours), **SFT** (200k hours), and **reinforcement learning**
+- Two variants: **Small** (LLaMA 3.2 Instruct 1B) and **Large** (LLaMA 3.1 3B)
+- XCodec2 at 16 kHz + a **super-resolution component** to generate 48 kHz output
+- **Speech Markup Language**: control speaking styles and non-verbals via tags, with **LoRA fine-tuning**
+- Streaming audio generation $\neq$ streaming TTS — model needs to see **full text first**, then generates audio in streaming mode
+- Architecture is **untouched** — same decoder-only LLM + tokenizer
 
-## Inworld — Key Requirements
+::: {.fragment style="text-align: center;"}
+![](images/inworld-arch.png){height="380px"}
+:::
 
-- **Streaming**: first audio chunk before full generation
-- **Expressiveness**: emotion, emphasis, pacing
-- **Consistency**: stable character voice across sessions
-- **Efficiency**: run on consumer hardware
+## Inworld — Audio Tokenizer
 
-## Inworld — Code Example
+- Architecture follows **XCodec2** — input is always **16 kHz** audio
+- **50 tokens/s**, codebook size **65k** — same as XCodec2, trained on **110k hours**
+- Different decoders for different target sample rates: **16 kHz**, **24 kHz**, and **48 kHz**
+- 16 kHz and 24 kHz decoders are **identical** — only difference is iSTFT hop size (320 vs 480); trained independently
+- For **48 kHz**: add 1D transposed ResNet blocks for upsampling
+  - First train on audios with estimated bandwidth $\geq$ 32 kHz
+  - Fine-tune only on audios with estimated bandwidth $\geq$ 44.1 kHz
+- All models use an additional **RMS volume loss** — without it, streaming audio generation can produce volume jumps
 
-```{.python code-line-numbers="|3-5|7-9"}
-from inworld import InworldClient
+:::: {.columns}
+::: {.column width="70%"}
+::: {.fragment style="text-align: center;"}
+![](images/inworld-tokenizer-arch.png){height="250px"}
+:::
+:::
+::: {.column width="30%"}
+::: {.fragment style="text-align: center;"}
+![](images/inwotld-tokenizer-decoders-comp.png){height="250px"}
+:::
+:::
+::::
 
-client = InworldClient(
-    api_key="your-api-key",
-    scene="scenes/my-scene"
-)
+## Inworld — Pretraining
 
-response = client.send_text("Hello, adventurer!")
-audio = response.audio  # streaming audio chunks
-```
+- Audio without transcripts, fixed duration **40s** segments — start/end marked with special tokens
+- Also used **20B text tokens** (instruction data) — without it, model degrades text understanding
+- Fixed batch sizes → used **torch.compile** to speed up training
+- **32 H100 GPUs**: Small pretrain took **2 days**, Large took **10 days**
+- Evaluation: **5k utterances** across languages, **continuation task** — 10s utterances, first half as prompt, measure speaker similarity
 
-# Summary {background-color="#2c3e50"}
+:::: {.columns}
+::: {.column width="40%"}
+::: {.fragment style="text-align: center;"}
+![](images/inworld-pretrain-params.png){height="350px"}
+:::
+:::
+::: {.column width="60%"}
+::: {.fragment style="text-align: center;"}
+![](images/inworld-pretrain-sim.png){height="350px"}
+:::
+:::
+::::
 
-## Comparison
 
-| | FSQ | LLaSA | Inworld |
-|---|---|---|---|
-| Type | Quantizer | TTS model | TTS platform |
-| Key idea | Deterministic rounding | LLM-based codec TTS | Real-time character TTS |
-| Codebook | Implicit | XCodec2 | Proprietary |
-| Open source | ✓ | ✓ | Partial |
+## Inworld — SFT
 
-## Key Takeaways
+- **Data preparation** — DNSMOS + language-specific CPS (chars/sec) filtering:
+  - Filter out bottom **20%** by DNSMOS
+  - Remove **5% outliers** (each end) for CPS per language
+  - Filter out pairs with low-quality transcriptions (excess punctuation, non-speech content)
+- Train NTP on audio tokens: `<|begin_of_text|>` $x_1, \dots, x_T$ `<|speech_start|>` $y_1, \dots, y_S$ `<|speech_end|>`
+- Variable-length sequences → **torch.compile unavailable** — ~3× slowdown vs pretraining
+- Experimented with SFT on **pretrained** and **non-pretrained** (text-base initialization) models
+- Tried **instruction following** during SFT but it failed — appears unsupported (dead code remains)
 
-- **FSQ** simplifies quantization — no codebook, no collapse, drop-in VQ replacement
-- **LLaSA** shows LLMs can generate natural, spontaneous speech
-- **Inworld** brings expressive TTS to real-time interactive applications
-- Common thread: **discrete audio tokens** enable language-model approaches to speech
+:::: {.columns}
+::: {.column width="50%"}
+::: {.fragment style="text-align: center;"}
+![](images/inworld-sft-params.png){height="500px"}
+:::
+:::
+::: {.column width="50%"}
+::: {.fragment style="text-align: center;"}
+![](images/inworld-sft-train-loss.png){height="450px"}
+:::
+:::
+::::
+
+## Inworld — Reinforcement Learning
+
+- **GRPO**: sample several audio completions for the same prompt, reinforce outputs scoring **above group average**, suppress those below
+- Rewards computed on decoded 48 kHz waveform: **Whisper WER**, **WavLM speaker similarity**, **DNSMOS quality**
+- Train both **single-reward** variants and a **unified model** (three normalized rewards summed with equal weights)
+- **Clipped updates + KL penalty** keep RL model close to SFT checkpoint — reduces reward-driven degeneration
+- Compare three **specialized models** (one reward each) vs one **unified model** (all three rewards)
+
+::: {.fragment style="text-align: center;"}
+![](images/inworld-rl-results.png){height="550px"}
+:::
+
+## Inworld — Audio Markups
+
+- Tags control style and non-verbals: `[angry]`, `[whispering]`, `[laugh]`, `[sigh]`
+- Adding style tags during normal SFT **failed** — model often ignored them
+- Codec tokens mix speaker identity, style, prosody, and content
+- Train on same-speaker **neutral + styled recordings** joined by silence
+- Separate **LoRA stage** learns markup control on ~180 hours of English data, likely after RL
+- Tag embeddings may remain poorly learned — LoRA updates model layers, not the embedding table
+- Style control **transfers to other languages** despite English-only markup training
+- Combining tags creates **meaningful new styles** not seen during training
+- Speaker embeddings may help separate speaker and style, but style can still leak into them
+- Paper and code **do not fully match**; some users report tags being spoken aloud; no evidence in code that style tags are actual tags
+- In general, **evaluation of style control is very difficult** — no standard metrics or benchmarks
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.fragment style="text-align: center;"}
+<!-- ![](images/inworld-markups-1.png){height="300px"} -->
+:::
+:::
+::: {.column width="50%"}
+::: {.fragment style="text-align: center;"}
+<!-- ![](images/inworld-markups-2.png){height="300px"} -->
+:::
+:::
+::::
+
+## Inworld — Evaluation
+
+:::: {.columns}
+::: {.column width="30%"}
+::: {style="text-align: center;"}
+![](images/inworld-eval-wer.png){height="150px"}
+:::
+:::
+::: {.column width="70%"}
+::: {style="text-align: center;"}
+![](images/inworld-eval-languages.png){height="400px"}
+:::
+:::
+::::
+
+- **WER** (English only) across different text lengths — compared full pipeline (pretrain + SFT + RL) vs SFT only
+- Generated **100 sentences** for each of **11 supported languages**, synthesized with same set of speakers (Small and Large)
+- **Internal arena**: 20 human voters, 400 evaluations total
+
+::: {.fragment style="text-align: center;"}
+![](images/inworld-eval-arena.png){height="250px"}
+:::
 
 ## References
 
