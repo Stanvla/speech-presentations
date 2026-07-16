@@ -31,72 +31,6 @@
       margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
       vertical-align: middle;
     }
-    /* CSS for syntax highlighting */
-    html { -webkit-text-size-adjust: 100%; }
-    pre > code.sourceCode { white-space: pre; position: relative; }
-    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-    pre > code.sourceCode > span:empty { height: 1.2em; }
-    .sourceCode { overflow: visible; }
-    code.sourceCode > span { color: inherit; text-decoration: inherit; }
-    div.sourceCode { margin: 1em 0; }
-    pre.sourceCode { margin: 0; }
-    @media screen {
-    div.sourceCode { overflow: auto; }
-    }
-    @media print {
-    pre > code.sourceCode { white-space: pre-wrap; }
-    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-    }
-    pre.numberSource code
-      { counter-reset: source-line 0; }
-    pre.numberSource code > span
-      { position: relative; left: -4em; counter-increment: source-line; }
-    pre.numberSource code > span > a:first-child::before
-      { content: counter(source-line);
-        position: relative; left: -1em; text-align: right; vertical-align: baseline;
-        border: none; display: inline-block;
-        -webkit-touch-callout: none; -webkit-user-select: none;
-        -khtml-user-select: none; -moz-user-select: none;
-        -ms-user-select: none; user-select: none;
-        padding: 0 4px; width: 4em;
-      }
-    pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-    div.sourceCode
-      { color: #f8f8f2; background-color: #2e3440; }
-    @media screen {
-    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-    }
-    code span { color: #f8f8f2; } /* Normal */
-    code span.al { color: #ff5555; font-weight: bold; } /* Alert */
-    code span.an { color: #75715e; } /* Annotation */
-    code span.at { color: #f92672; } /* Attribute */
-    code span.bn { color: #ae81ff; } /* BaseN */
-    code span.bu { color: #66d9ef; } /* BuiltIn */
-    code span.cf { color: #f92672; } /* ControlFlow */
-    code span.ch { color: #e6db74; } /* Char */
-    code span.cn { color: #ae81ff; } /* Constant */
-    code span.co { color: #75715e; } /* Comment */
-    code span.cv { color: #75715e; } /* CommentVar */
-    code span.do { color: #75715e; } /* Documentation */
-    code span.dt { color: #66d9ef; font-style: italic; } /* DataType */
-    code span.dv { color: #ae81ff; } /* DecVal */
-    code span.er { color: #ff5555; text-decoration: underline; } /* Error */
-    code span.ex { color: #a6e22e; font-weight: bold; } /* Extension */
-    code span.fl { color: #ae81ff; } /* Float */
-    code span.fu { color: #a6e22e; } /* Function */
-    code span.im { color: #f92672; } /* Import */
-    code span.in { color: #f1fa8c; } /* Information */
-    code span.kw { color: #f92672; } /* Keyword */
-    code span.op { color: #f8f8f2; } /* Operator */
-    code span.ot { color: #a6e22e; } /* Other */
-    code span.pp { color: #f92672; } /* Preprocessor */
-    code span.re { color: #75715e; } /* RegionMarker */
-    code span.sc { color: #ae81ff; } /* SpecialChar */
-    code span.ss { color: #e6db74; } /* SpecialString */
-    code span.st { color: #e6db74; } /* String */
-    code span.va { color: #f8f8f2; } /* Variable */
-    code span.vs { color: #e6db74; } /* VerbatimString */
-    code span.wa { color: #ff5555; } /* Warning */
   </style>
   <link rel="stylesheet" href="../site_libs/revealjs/dist/theme/quarto-602afe5f004ef3385ed7569169aba181.css">
   <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
@@ -233,8 +167,8 @@ Vladislav Stankov
 <section id="vq-recap-quantized-vae" class="slide level2">
 <h2>VQ Recap — Quantized VAE</h2>
 <ul>
-<li class="fragment">VAE with a <strong>quantization bottleneck</strong>: encoder <span class="math inline">\rightarrow</span> continuous latent <span class="math inline">z_e</span> <span class="math inline">\rightarrow</span> quantize <span class="math inline">\rightarrow</span> decoder</li>
-<li class="fragment">Quantization: map <span class="math inline">z_e</span> to the <strong>nearest codebook entry</strong> (argmin / nearest-neighbor)</li>
+<li>VAE with a <strong>quantization bottleneck</strong>: encoder <span class="math inline">\rightarrow</span> continuous latent <span class="math inline">z_e</span> <span class="math inline">\rightarrow</span> quantize <span class="math inline">\rightarrow</span> decoder</li>
+<li>Quantization: map <span class="math inline">z_e</span> to the <strong>nearest codebook entry</strong> (argmin / nearest-neighbor)</li>
 </ul>
 <div class="fragment">
 <p><span class="math display">
@@ -242,18 +176,18 @@ z_q = e_k, \quad k = \arg\min_j \| z_e - e_j \|_2
 </span></p>
 </div>
 <ul>
-<li class="fragment">Codebook <span class="math inline">\mathcal{C} = \{e_k\}_{k=1}^{K}</span> is a <strong>learnable embedding table</strong></li>
-<li class="fragment">Argmin is not differentiable — use <strong>STE</strong>: copy gradients from decoder input straight to encoder output</li>
-<li class="fragment">VAE formulation holds exactly, but KL term is <strong>constant</strong> — we use a deterministic policy (argmin), not sampling</li>
-<li class="fragment">Training uses <strong>reconstruction</strong>, <strong>codebook</strong>, and <strong>commitment</strong> losses (sometimes EMA instead of codebook loss) — needed to make VQ-VAE learn and stabilize training</li>
+<li>Codebook <span class="math inline">\mathcal{C} = \{e_k\}_{k=1}^{K}</span> is a <strong>learnable embedding table</strong></li>
+<li>Argmin is not differentiable — use <strong>STE</strong>: copy gradients from decoder input straight to encoder output</li>
+<li>VAE formulation holds exactly, but KL term is <strong>constant</strong> — we use a deterministic policy (argmin), not sampling</li>
+<li>Training uses <strong>reconstruction</strong>, <strong>codebook</strong>, and <strong>commitment</strong> losses (sometimes EMA instead of codebook loss) — needed to make VQ-VAE learn and stabilize training</li>
 </ul>
 </section>
 <section id="rvq-residual-vector-quantization" class="slide level2">
 <h2>RVQ — Residual Vector Quantization</h2>
 <ul>
-<li class="fragment">What if <strong>one codebook is not enough</strong>?</li>
-<li class="fragment">Naive fix: just make the codebook larger — but this <strong>doesn’t scale</strong>; utilization drops sharply beyond <span class="math inline">\sim 2^{11}</span> entries (codebook collapse)</li>
-<li class="fragment">Better idea: quantize, compute the <strong>residual</strong>, quantize the residual, repeat</li>
+<li>What if <strong>one codebook is not enough</strong>? — single VQ reconstruction is lossy, the quantization error can be significant</li>
+<li>Naive fix: just make the codebook larger — but this <strong>doesn’t scale</strong>; utilization drops sharply beyond <span class="math inline">\sim 2^{11}</span> entries (dead codes)</li>
+<li>Better idea: quantize, compute the <strong>residual</strong>, quantize the residual, repeat</li>
 </ul>
 <div class="fragment">
 <p><span class="math display">
@@ -261,18 +195,18 @@ r_0 = z_e, \quad z_q^{(i)} = \text{VQ}_i(r_{i-1}), \quad r_i = r_{i-1} - z_q^{(i
 </span></p>
 </div>
 <ul>
-<li class="fragment">Final representation: <span class="math inline">\hat{z} = \sum_{i=1}^{N} z_q^{(i)}</span> — sum of <span class="math inline">N</span> codebook lookups</li>
-<li class="fragment">Much more <strong>versatile</strong> than single-codebook VQ</li>
+<li>Final representation: <span class="math inline">\hat{z} = \sum_{i=1}^{N} z_q^{(i)}</span> — sum of <span class="math inline">N</span> codebook lookups</li>
+<li>Much more <strong>versatile</strong> than single-codebook VQ</li>
 </ul>
 <div class="fragment" style="text-align: center;">
-<p><img data-src="images/rvq-arch.png" height="450"></p>
+<p><img data-src="images/rvq-arch.png" height="480"></p>
 </div>
 </section>
 <section id="vq-rvq-common-issues" class="slide level2">
 <h2>VQ &amp; RVQ — Common Issues</h2>
 <ul>
-<li class="fragment">A frame is a vector of codebook indices: <span class="math inline">\mathbf{c} = [c_1, c_2, \dots, c_N]</span></li>
-<li class="fragment">But <span class="math inline">c_i</span> depends on the residual from steps <span class="math inline">1, \dots, i{-}1</span></li>
+<li>A frame is a vector of codebook indices: <span class="math inline">\mathbf{c} = [c_1, c_2, \dots, c_N]</span></li>
+<li>But <span class="math inline">c_i</span> depends on the residual from steps <span class="math inline">1, \dots, i{-}1</span></li>
 </ul>
 <div class="fragment">
 <p><span class="math display">
@@ -280,28 +214,28 @@ c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\big
 </span></p>
 </div>
 <ul>
-<li class="fragment"><strong>Codebooks are not independent</strong> — the <span class="math inline">i</span>-th code is meaningless without knowing all previous codes</li>
-<li class="fragment">Cannot predict the whole frame <span class="math inline">\mathbf{c} = [c_1, \dots, c_N]</span> at once — ideally need to predict each <span class="math inline">c_i</span> <strong>autoregressively</strong>, conditioned on <span class="math inline">c_1, \dots, c_{i-1}</span></li>
-<li class="fragment"><strong>Dead codes</strong>: some codebook entries are never selected — requires tracking utilization and <strong>reinitialization</strong> strategies</li>
-<li class="fragment">Training can be <strong>unstable</strong> — balancing reconstruction, commitment, and codebook losses is fragile (applies to both VQ and RVQ)</li>
-<li class="fragment">Motivates alternatives like <strong>FSQ</strong> that avoid these issues entirely</li>
+<li><strong>Codebooks are not independent</strong> — the <span class="math inline">i</span>-th code is meaningless without knowing all previous codes</li>
+<li>Cannot predict the whole frame <span class="math inline">\mathbf{c} = [c_1, \dots, c_N]</span> at once — ideally need to predict each <span class="math inline">c_i</span> <strong>autoregressively</strong>, conditioned on <span class="math inline">c_1, \dots, c_{i-1}</span></li>
+<li><strong>Dead codes</strong>: some codebook entries are never selected — requires tracking utilization and <strong>reinitialization</strong> strategies</li>
+<li>Training can be <strong>unstable</strong> — balancing reconstruction, commitment, and codebook losses is fragile (applies to both VQ and RVQ)</li>
+<li>Motivates alternatives like <strong>FSQ</strong> that avoid these issues entirely</li>
 </ul>
 </section>
 <section id="fsq-finite-scalar-quantization-overview" class="slide level2">
 <h2>FSQ — Finite Scalar Quantization Overview</h2>
 <ul>
-<li class="fragment"><strong>Drop-in replacement</strong> for VQ and RVQ (in theory)</li>
-<li class="fragment"><strong>No additional losses</strong> — no commitment loss, no codebook loss, no EMA</li>
-<li class="fragment"><strong>No learned embedding tables</strong> — the codebook is <strong>implicit</strong>, directly quantize the encoder’s latent space</li>
-<li class="fragment">Still uses <strong>STE</strong> to pass gradients through to the encoder</li>
-<li class="fragment">Achieves very high utilization even for much larger codebooks: <span class="math inline">\sim 2^{10}</span> in VQ vs <span class="math inline">\sim 2^{16}</span> in FSQ</li>
+<li><strong>Drop-in replacement</strong> for VQ and RVQ (in theory)</li>
+<li><strong>No additional losses</strong> — no commitment loss, no codebook loss, no EMA</li>
+<li><strong>No learned embedding tables</strong> — the codebook is <strong>implicit</strong>, directly quantize the encoder’s latent space</li>
+<li>Still uses <strong>STE</strong> to pass gradients through to the encoder</li>
+<li>Achieves very high utilization even for much larger codebooks: <span class="math inline">\sim 2^{10}</span> in VQ vs <span class="math inline">\sim 2^{16}</span> in FSQ</li>
 </ul>
 </section>
 <section id="fsq-a-new-quantization-paradigm" class="slide level2">
 <h2>FSQ — A New Quantization Paradigm</h2>
 <ul>
-<li class="fragment">Unlike VQ where <span class="math inline">d \geq 512</span>, FSQ uses a <strong>very small</strong> encoder output: <span class="math inline">d &lt; 10</span>, so <span class="math inline">z \in \mathbb{R}^d</span></li>
-<li class="fragment">Each dimension is <strong>bounded</strong> to <span class="math inline">L_i</span> discrete levels via rounding:</li>
+<li>Unlike VQ where <span class="math inline">d \geq 512</span>, FSQ uses a <strong>very small</strong> encoder output: <span class="math inline">d &lt; 10</span>, so <span class="math inline">z_e \in \mathbb{R}^d</span></li>
+<li>Each dimension is <strong>bounded</strong> to <span class="math inline">L_i</span> discrete levels via rounding:</li>
 </ul>
 <div class="fragment">
 <p><span class="math display">
@@ -309,20 +243,20 @@ c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\big
 </span></p>
 </div>
 <ul>
-<li class="fragment">Example: <span class="math inline">d = 3</span>, <span class="math inline">L = 3</span> <span class="math inline">\Rightarrow</span> each dimension in <span class="math inline">\{-1, 0, 1\}</span> <span class="math inline">\Rightarrow</span> <strong>implicit codebook</strong> of size <span class="math inline">L^d = 3^3 = 27</span></li>
-<li class="fragment">We can <strong>enumerate all possible vectors</strong> — the codebook is the full Cartesian product: <span class="math inline">\mathcal{C} = \{1, 2, \dots, L^d\}</span></li>
-<li class="fragment">In general <span class="math inline">L_i</span> can differ per dimension — codebook size is <span class="math inline">\prod_{i=1}^{d} L_i</span></li>
+<li>Example: <span class="math inline">d = 3</span>, <span class="math inline">L = 3</span> <span class="math inline">\Rightarrow</span> each dimension in <span class="math inline">\{-1, 0, 1\}</span> <span class="math inline">\Rightarrow</span> <strong>implicit codebook</strong> of size <span class="math inline">L^d = 3^3 = 27</span></li>
+<li>We can <strong>enumerate all possible vectors</strong> — the codebook is the full Cartesian product: <span class="math inline">\mathcal{C} = \{1, 2, \dots, L^d\}</span></li>
+<li>In general <span class="math inline">L_i</span> can differ per dimension — codebook size is <span class="math inline">\prod_{i=1}^{d} L_i</span></li>
 </ul>
 <div class="fragment" style="text-align: center;">
-<p><img data-src="images/vq-vs-fsq.png" height="400"></p>
+<p><img data-src="images/vq-vs-fsq.png" height="450"></p>
 </div>
 </section>
 <section id="vq-vs-fsq-intuition" class="slide level2">
 <h2>VQ vs FSQ — Intuition</h2>
 <ul>
-<li class="fragment">VQ is potentially <strong>more expressive</strong> — it learns where to place each code vector freely in the latent space via separate embedding vectors</li>
-<li class="fragment">FSQ is <strong>more constrained</strong> — the latent space is bounded, and the encoder must fit its representation into a fixed grid</li>
-<li class="fragment">This difference is mostly <strong>theoretical</strong> — both models are highly nonlinear, and with powerful enough encoders the expressiveness gap shrinks</li>
+<li>VQ is potentially <strong>more expressive</strong> — it learns where to place each code vector freely in the latent space via separate embedding vectors</li>
+<li>FSQ is <strong>more constrained</strong> — the latent space is bounded, and the encoder must fit its representation into a fixed grid</li>
+<li>This difference is mostly <strong>theoretical</strong> — both models are highly nonlinear, and with powerful enough encoders the expressiveness gap shrinks</li>
 </ul>
 <div class="fragment" style="text-align: center;">
 <p><img data-src="images/vq-vs-fsq-vis.png" height="500"></p>
@@ -331,33 +265,14 @@ c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\big
 <section id="fsq-vs-vq-evaluation" class="slide level2">
 <h2>FSQ vs VQ — Evaluation</h2>
 <ul>
-<li class="fragment">Train VQ and FSQ on images, then generate images with <strong>MaskGIT</strong> (class-conditional BERT, predicts codes)</li>
-<li class="fragment"><strong>Reconstruction FID</strong>: Fréchet Inception Distance between real images and their reconstructions</li>
-<li class="fragment"><strong>Sampling FID</strong>: FID of images generated by MaskGIT using the learned codes</li>
-<li class="fragment"><strong>Codebook usage</strong>: fraction of codewords used at least once</li>
-<li class="fragment"><strong>Compression cost</strong>: how hard is it for the model to use this encoding — is codeword usage close to uniform?</li>
+<li>Train VQ and FSQ on images, then generate images with <strong>MaskGIT</strong> (class-conditional BERT, predicts codes)</li>
+<li><strong>Reconstruction FID</strong>: Fréchet Inception Distance between real images and their reconstructions</li>
+<li><strong>Sampling FID</strong>: FID of images generated by MaskGIT using the learned codes</li>
+<li><strong>Codebook usage</strong>: fraction of codewords used at least once</li>
+<li><strong>Compression cost</strong>: how hard is it for the model to use this encoding — is codeword usage close to uniform?</li>
 </ul>
 <div class="fragment" style="text-align: center;">
-<p><img data-src="images/fsq-vs-vq-eval.png" height="750"></p>
-</div>
-</section>
-<section id="maskgit-results-fsq-vs-vq-vs-adm" class="slide level2">
-<h2>MaskGIT Results — FSQ vs VQ vs ADM</h2>
-<ul>
-<li class="fragment">FSQ config: <span class="math inline">L = [8, 5, 5, 5]</span> <span class="math inline">\Rightarrow</span> codebook size <span class="math inline">= 8 \times 5^3 = 1000</span></li>
-<li class="fragment"><strong>Classifier-Free Guidance (CFG)</strong>: MaskGIT trained with 10% of labels replaced by MASK; at inference, combine class-conditional and unconditional logits:</li>
-</ul>
-<div class="fragment">
-<p><span class="math display">
-\ell' = \ell_c + \alpha(\ell_c - \ell_\emptyset)
-</span></p>
-</div>
-<ul>
-<li class="fragment"><strong>Precision &amp; Recall</strong>: via a learned classifier — how well do generated images match real distributions</li>
-<li class="fragment">Baseline: <strong>ADM</strong> (diffusion model) — FSQ + MaskGIT is competitive with diffusion-based generation</li>
-</ul>
-<div class="fragment" style="text-align: center;">
-<p><img data-src="images/maskgit-results.png" height="600"></p>
+<p><img data-src="images/fsq-vs-vq-eval.png" height="700"></p>
 </div>
 </section></section>
 <section>
@@ -368,152 +283,385 @@ c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\big
 <section id="llasa-overview" class="slide level2">
 <h2>LLaSA — Overview</h2>
 <ul>
-<li class="fragment"><strong>L</strong>arge <strong>La</strong>nguage model based <strong>S</strong>peech synthesis with spontaneous <strong>A</strong>ttributes</li>
-<li class="fragment">Leverages pre-trained LLMs for text-to-speech</li>
-<li class="fragment">Models spontaneous speech phenomena (fillers, pauses, laughter)</li>
-<li class="fragment">Codec-based: audio <span class="math inline">\rightarrow</span> discrete tokens <span class="math inline">\rightarrow</span> LLM <span class="math inline">\rightarrow</span> audio</li>
+<li>Many zero-shot voice cloning approaches invent <strong>custom architectures / pipelines</strong> to improve quality</li>
+<li>LLaSA: first attempt to use a <strong>traditional LLM approach</strong> for speech — decoder-only model + audio tokenizer</li>
+<li>Made possible by <strong>FSQ</strong>: no need to change the LLM at all, just <strong>next-token prediction</strong></li>
+<li>Instead of studying architecture choices, they invest in understanding <strong>scaling principles</strong>: scale compute during training or during inference</li>
+<li>One of the first papers to measure how <strong>scaling inference compute</strong> can significantly improve output quality</li>
 </ul>
 </section>
-<section id="llasa-architecture" class="slide level2">
-<h2>LLaSA — Architecture</h2>
+<section id="llasa-design" class="slide level2">
+<h2>LLaSA — Design</h2>
+<ul>
+<li><strong>Backbones</strong>: LLaMA 3.2 (1B, 3B) and LLaMA 3.1 (8B) with extended vocabulary</li>
+<li>LLM trained on quadruples: <em>(prompt text, text to generate, audio prompt, audio to generate)</em> — loss computed <strong>only on audio tokens</strong></li>
+<li>Target languages: <strong>English and Chinese</strong> (bilingual)</li>
+<li>Dataset sizes: <strong>80k, 160k, 250k hours</strong></li>
+<li><strong>XCodec2</strong>: replaces RVQ with FSQ; decoder follows <strong>Vocos</strong> — transformer predicting STFT magnitude &amp; phase + iSTFT to generate audio</li>
+<li>Audio tokenizer trained on <strong>150k hours</strong> (MLS + Emilia), 16 kHz, codebook size <strong>65k</strong>, covering <strong>10 languages</strong> (Asian and European)</li>
+</ul>
+</section>
+<section id="xcodec2-results" class="slide level2">
+<h2>XCodec2 — Results</h2>
+<div style="text-align: center;">
+<p><img data-src="images/xcodec2-results.png" height="600"></p>
+</div>
+<ul>
+<li><strong>Encodec</strong>: 8 codebooks, 75 Hz frame rate, bitrate <span class="math inline">= \log_2(1024) \times 8 \times 75 = 6</span> kbps</li>
+<li><strong>DAC</strong>: 8 codebooks × 50 Hz, bitrate <span class="math inline">= \log_2(1024) \times 12 \times 50 = 6</span> kbps</li>
+<li><strong>XCodec2</strong>: single codebook → <strong>0.8 kbps</strong>; BigCodec → 1.04 kbps</li>
+<li>Models with very low kbps achieve <strong>UTMOS scores higher than ground truth</strong> — the decoder acts as a <strong>generator</strong>, not just a reconstructor</li>
+<li>However, <strong>PESQ and speaker similarity (SIM)</strong> are usually lower at low bitrates compared to high-bitrate models</li>
+</ul>
+</section>
+<section id="llasa-training-scaling" class="slide level2">
+<h2>LLaSA — Training Scaling</h2>
+<p>Evaluation protocol borrowed from <strong>BASE TTS</strong>:</p>
+<table style="width:100%; table-layout:fixed; font-size: 0.65em;">
+<colgroup>
+<col style="width:12%">
+<col style="width:35%">
+<col style="width:16%">
+<col style="width:21%">
+<col style="width:16%">
+</colgroup>
+<thead>
+<tr>
+<th>
+Category
+</th>
+<th>
+Example
+</th>
+<th>
+1 (Bad)
+</th>
+<th>
+2 (Ok)
+</th>
+<th>
+3 (Good)
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Compound Nouns
+</td>
+<td>
+“stone-built quaint countryside holiday cottage”
+</td>
+<td>
+Fails to recognise
+</td>
+<td>
+Unnatural stress
+</td>
+<td>
+Natural phrasal stress
+</td>
+</tr>
+<tr>
+<td>
+Emotions
+</td>
+<td>
+“Oh my gosh! Are we really going to the Maldives?”
+</td>
+<td>
+No audible emotion
+</td>
+<td>
+Present but insufficient
+</td>
+<td>
+Correct recognition
+</td>
+</tr>
+<tr>
+<td>
+Foreign Words
+</td>
+<td>
+“mise en place … pièce de résistance”
+</td>
+<td>
+Incorrect pronunciation
+</td>
+<td>
+Foreign accent, not quite right
+</td>
+<td>
+Correct rendering
+</td>
+</tr>
+<tr>
+<td>
+Paralinguistics
+</td>
+<td>
+“Shh, Lucy, shhh, we mustn’t wake…”
+</td>
+<td>
+No recognition
+</td>
+<td>
+Distinct but unnatural
+</td>
+<td>
+Natural rendering
+</td>
+</tr>
+<tr>
+<td>
+Punctuations
+</td>
+<td>
+“Emergency @ home; call ASAP! … #familymatters”
+</td>
+<td>
+Glitches on # or &amp;
+</td>
+<td>
+No glitch, incorrect
+</td>
+<td>
+Correct pausing
+</td>
+</tr>
+<tr>
+<td>
+Questions
+</td>
+<td>
+“will the ministers find the answers in time?”
+</td>
+<td>
+Wrong intonation
+</td>
+<td>
+Largely correct
+</td>
+<td>
+Correct intonation
+</td>
+</tr>
+<tr>
+<td>
+Syntactic
+</td>
+<td>
+“The movie that De Moya … was a box-office hit”
+</td>
+<td>
+Fails to parse
+</td>
+<td>
+Parses but unnatural
+</td>
+<td>
+Correct &amp; natural
+</td>
+</tr>
+</tbody>
+</table>
+<div style="margin-top: 2em;">
+
+</div>
+<div class="fragment" style="font-size: 1em;">
+<ul>
+<li>Foreign words, compound nouns → <strong>data</strong>; Punctuation, syntactic complexity → <strong>model size</strong>; Emotions, paralinguistics → <strong>both</strong></li>
+</ul>
+</div>
 <div class="columns">
-<div class="column" style="width:55%;">
-<ul>
-<li class="fragment"><strong>Speech tokenizer</strong>: XCodec2 — audio to discrete tokens</li>
-<li class="fragment"><strong>Language model</strong>: fine-tuned LLaMA</li>
-<li class="fragment"><strong>Vocoder</strong>: reconstructs waveform from tokens</li>
-</ul>
-</div><div class="column" style="width:45%;">
-<!-- Replace with your own architecture diagram -->
-<!-- ![](images/llasa-arch.png) -->
+<div class="column" style="width:60%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/llasa-training-scaling.png" height="300"></p>
+</div>
+</div><div class="column" style="width:40%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/base-tts-training-scaling.png" height="320"></p>
+</div>
 </div></div>
-</section>
-<section id="llasa-token-representation" class="slide level2">
-<h2>LLaSA — Token Representation</h2>
+<div class="fragment" style="font-size: 1em;">
 <ul>
-<li class="fragment">XCodec2 produces a single-codebook token stream</li>
-<li class="fragment">Each token represents ~20ms of audio</li>
-<li class="fragment">Text and speech tokens share the same vocabulary</li>
+<li>BASE TTS: trained <strong>from scratch</strong>; <strong>Small</strong> 150M + 1k hrs, <strong>Base</strong> 400M + 10k hrs, <strong>Large</strong> 1B + 100k hrs</li>
 </ul>
-<p><span class="math display">
-\mathcal{V} = \mathcal{V}_{\text{text}} \cup \mathcal{V}_{\text{speech}}
-</span></p>
-<ul>
-<li class="fragment">The LLM is trained autoregressively on interleaved text + speech</li>
-</ul>
+</div>
 </section>
-<section id="llasa-animated-derivation-example" class="slide level2">
-<h2>LLaSA — Animated Derivation Example</h2>
-<p>Autoregressive generation objective:</p>
-<div class="fragment">
-<p><span class="math display">
-p(\mathbf{s} \mid \mathbf{t}) = \prod_{i=1}^{N} p(s_i \mid s_{&lt;i}, \mathbf{t})
-</span></p>
+<section id="llasa-inference-scaling" class="slide level2">
+<h2>LLaSA — Inference Scaling</h2>
+<div style="font-size: 0.85em;">
+<p>Inference compute scaling — three strategies:</p>
 </div>
-<div class="fragment">
-<p><span class="math display">
-\mathcal{L}_{\text{AR}} = -\sum_{i=1}^{N} \log p(s_i \mid s_{&lt;i}, \mathbf{t})
-</span></p>
+<ul>
+<li><strong>PRM</strong> (Process Reward Model): beam search during generation — <span class="math inline">M</span> beams × <span class="math inline">N</span> candidates, generate ~0.5s chunks, keep top <span class="math inline">M</span>, continue</li>
+<li><strong>ORM</strong> (Output Reward Model): generate <span class="math inline">M \times N</span> candidates (to match beam search budget), select best by reward (SIM, WER)</li>
+<li><strong>Partial PRM</strong>: use PRM for first ~2 seconds, then switch to ORM for the remainder (generate rest, choose best)</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/llasa-inference-scalining.png" height="520"></p>
 </div>
-<div class="fragment">
-<p><span class="math display">
-= -\mathbb{E}_{(\mathbf{t}, \mathbf{s}) \sim \mathcal{D}} \left[ \sum_{i=1}^{N} \log p_\theta(s_i \mid s_{&lt;i}, \mathbf{t}) \right]
-</span></p>
+</section>
+<section id="llasa-final-results" class="slide level2">
+<h2>LLaSA — Final Results</h2>
+<div style="text-align: center;">
+<p><img data-src="images/llasa-final-results.png" height="800"></p>
 </div>
+<ul>
+<li>Using inference scaling is <strong>not a fair comparison</strong> against baselines (they don’t use it)</li>
+<li>But it demonstrates how we can <strong>push quality further</strong> at the cost of extra compute</li>
+</ul>
 </section></section>
 <section>
 <section id="inworld-tts" class="title-slide slide level1 center" data-background-color="#1a5276">
 <h1>Inworld TTS</h1>
 
 </section>
-<section id="inworld-context" class="slide level2">
-<h2>Inworld — Context</h2>
+<section id="inworld-llasa-maxing" class="slide level2">
+<h2>Inworld — LLaSA Maxing</h2>
 <ul>
-<li class="fragment">Real-time TTS for interactive AI characters</li>
-<li class="fragment">Low latency requirement for conversational AI</li>
-<li class="fragment">Must handle diverse speaking styles and emotions</li>
-<li class="fragment">Integration with game engines and virtual worlds</li>
+<li>Extends the LLaSA idea (pure LLM machinery) with full training pipeline: <strong>pretraining</strong> (1M hours), <strong>SFT</strong> (200k hours), and <strong>reinforcement learning</strong></li>
+<li>Two variants: <strong>Small</strong> (LLaMA 3.2 Instruct 1B) and <strong>Large</strong> (LLaMA 3.1 3B)</li>
+<li>XCodec2 at 16 kHz + a <strong>super-resolution component</strong> to generate 48 kHz output</li>
+<li><strong>Speech Markup Language</strong>: control speaking styles and non-verbals via tags, with <strong>LoRA fine-tuning</strong></li>
+<li>Streaming audio generation <span class="math inline">\neq</span> streaming TTS — model needs to see <strong>full text first</strong>, then generates audio in streaming mode</li>
+<li>Architecture is <strong>untouched</strong> — same decoder-only LLM + tokenizer</li>
 </ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-arch.png" height="380"></p>
+</div>
 </section>
-<section id="inworld-key-requirements" class="slide level2">
-<h2>Inworld — Key Requirements</h2>
+<section id="inworld-audio-tokenizer" class="slide level2">
+<h2>Inworld — Audio Tokenizer</h2>
 <ul>
-<li class="fragment"><strong>Streaming</strong>: first audio chunk before full generation</li>
-<li class="fragment"><strong>Expressiveness</strong>: emotion, emphasis, pacing</li>
-<li class="fragment"><strong>Consistency</strong>: stable character voice across sessions</li>
-<li class="fragment"><strong>Efficiency</strong>: run on consumer hardware</li>
-</ul>
-</section>
-<section id="inworld-code-example" class="slide level2">
-<h2>Inworld — Code Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" data-code-line-numbers="|3-5|7-9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a></a><span class="im">from</span> inworld <span class="im">import</span> InworldClient</span>
-<span id="cb1-2"><a></a></span>
-<span id="cb1-3"><a></a>client <span class="op">=</span> InworldClient(</span>
-<span id="cb1-4"><a></a>    api_key<span class="op">=</span><span class="st">"your-api-key"</span>,</span>
-<span id="cb1-5"><a></a>    scene<span class="op">=</span><span class="st">"scenes/my-scene"</span></span>
-<span id="cb1-6"><a></a>)</span>
-<span id="cb1-7"><a></a></span>
-<span id="cb1-8"><a></a>response <span class="op">=</span> client.send_text(<span class="st">"Hello, adventurer!"</span>)</span>
-<span id="cb1-9"><a></a>audio <span class="op">=</span> response.audio  <span class="co"># streaming audio chunks</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section></section>
-<section>
-<section id="summary" class="title-slide slide level1 center" data-background-color="#2c3e50">
-<h1>Summary</h1>
-
-</section>
-<section id="comparison" class="slide level2">
-<h2>Comparison</h2>
-<table class="caption-top">
-<colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-</colgroup>
-<thead>
-<tr class="header">
-<th></th>
-<th>FSQ</th>
-<th>LLaSA</th>
-<th>Inworld</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Type</td>
-<td>Quantizer</td>
-<td>TTS model</td>
-<td>TTS platform</td>
-</tr>
-<tr class="even">
-<td>Key idea</td>
-<td>Deterministic rounding</td>
-<td>LLM-based codec TTS</td>
-<td>Real-time character TTS</td>
-</tr>
-<tr class="odd">
-<td>Codebook</td>
-<td>Implicit</td>
-<td>XCodec2</td>
-<td>Proprietary</td>
-</tr>
-<tr class="even">
-<td>Open source</td>
-<td>✓</td>
-<td>✓</td>
-<td>Partial</td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="key-takeaways" class="slide level2">
-<h2>Key Takeaways</h2>
+<li>Architecture follows <strong>XCodec2</strong> — input is always <strong>16 kHz</strong> audio</li>
+<li><strong>50 tokens/s</strong>, codebook size <strong>65k</strong> — same as XCodec2, trained on <strong>110k hours</strong></li>
+<li>Different decoders for different target sample rates: <strong>16 kHz</strong>, <strong>24 kHz</strong>, and <strong>48 kHz</strong></li>
+<li>16 kHz and 24 kHz decoders are <strong>identical</strong> — only difference is iSTFT hop size (320 vs 480); trained independently</li>
+<li>For <strong>48 kHz</strong>: add 1D transposed ResNet blocks for upsampling
 <ul>
-<li class="fragment"><strong>FSQ</strong> simplifies quantization — no codebook, no collapse, drop-in VQ replacement</li>
-<li class="fragment"><strong>LLaSA</strong> shows LLMs can generate natural, spontaneous speech</li>
-<li class="fragment"><strong>Inworld</strong> brings expressive TTS to real-time interactive applications</li>
-<li class="fragment">Common thread: <strong>discrete audio tokens</strong> enable language-model approaches to speech</li>
+<li>First train on audios with estimated bandwidth <span class="math inline">\geq</span> 32 kHz</li>
+<li>Fine-tune only on audios with estimated bandwidth <span class="math inline">\geq</span> 44.1 kHz</li>
+</ul></li>
+<li>All models use an additional <strong>RMS volume loss</strong> — without it, streaming audio generation can produce volume jumps</li>
 </ul>
+<div class="columns">
+<div class="column" style="width:70%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-tokenizer-arch.png" height="250"></p>
+</div>
+</div><div class="column" style="width:30%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inwotld-tokenizer-decoders-comp.png" height="250"></p>
+</div>
+</div></div>
+</section>
+<section id="inworld-pretraining" class="slide level2">
+<h2>Inworld — Pretraining</h2>
+<ul>
+<li>Audio without transcripts, fixed duration <strong>40s</strong> segments — start/end marked with special tokens</li>
+<li>Also used <strong>20B text tokens</strong> (instruction data) — without it, model degrades text understanding</li>
+<li>Fixed batch sizes → used <strong>torch.compile</strong> to speed up training</li>
+<li><strong>32 H100 GPUs</strong>: Small pretrain took <strong>2 days</strong>, Large took <strong>10 days</strong></li>
+<li>Evaluation: <strong>5k utterances</strong> across languages, <strong>continuation task</strong> — 10s utterances, first half as prompt, measure speaker similarity</li>
+</ul>
+<div class="columns">
+<div class="column" style="width:40%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-pretrain-params.png" height="350"></p>
+</div>
+</div><div class="column" style="width:60%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-pretrain-sim.png" height="350"></p>
+</div>
+</div></div>
+</section>
+<section id="inworld-sft" class="slide level2">
+<h2>Inworld — SFT</h2>
+<ul>
+<li><strong>Data preparation</strong> — DNSMOS + language-specific CPS (chars/sec) filtering:
+<ul>
+<li>Filter out bottom <strong>20%</strong> by DNSMOS</li>
+<li>Remove <strong>5% outliers</strong> (each end) for CPS per language</li>
+<li>Filter out pairs with low-quality transcriptions (excess punctuation, non-speech content)</li>
+</ul></li>
+<li>Train NTP on audio tokens: <code>&lt;|begin_of_text|&gt;</code> <span class="math inline">x_1, \dots, x_T</span> <code>&lt;|speech_start|&gt;</code> <span class="math inline">y_1, \dots, y_S</span> <code>&lt;|speech_end|&gt;</code></li>
+<li>Variable-length sequences → <strong>torch.compile unavailable</strong> — ~3× slowdown vs pretraining</li>
+<li>Experimented with SFT on <strong>pretrained</strong> and <strong>non-pretrained</strong> (text-base initialization) models</li>
+<li>Tried <strong>instruction following</strong> during SFT but it failed — appears unsupported (dead code remains)</li>
+</ul>
+<div class="columns">
+<div class="column" style="width:50%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-sft-params.png" height="500"></p>
+</div>
+</div><div class="column" style="width:50%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-sft-train-loss.png" height="450"></p>
+</div>
+</div></div>
+</section>
+<section id="inworld-reinforcement-learning" class="slide level2">
+<h2>Inworld — Reinforcement Learning</h2>
+<ul>
+<li><strong>GRPO</strong>: sample several audio completions for the same prompt, reinforce outputs scoring <strong>above group average</strong>, suppress those below</li>
+<li>Rewards computed on decoded 48 kHz waveform: <strong>Whisper WER</strong>, <strong>WavLM speaker similarity</strong>, <strong>DNSMOS quality</strong></li>
+<li>Train both <strong>single-reward</strong> variants and a <strong>unified model</strong> (three normalized rewards summed with equal weights)</li>
+<li><strong>Clipped updates + KL penalty</strong> keep RL model close to SFT checkpoint — reduces reward-driven degeneration</li>
+<li>Compare three <strong>specialized models</strong> (one reward each) vs one <strong>unified model</strong> (all three rewards)</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-rl-results.png" height="550"></p>
+</div>
+</section>
+<section id="inworld-audio-markups" class="slide level2">
+<h2>Inworld — Audio Markups</h2>
+<ul>
+<li>Tags control style and non-verbals: <code>[angry]</code>, <code>[whispering]</code>, <code>[laugh]</code>, <code>[sigh]</code></li>
+<li>Adding style tags during normal SFT <strong>failed</strong> — model often ignored them</li>
+<li>Codec tokens mix speaker identity, style, prosody, and content</li>
+<li>Train on same-speaker <strong>neutral + styled recordings</strong> joined by silence</li>
+<li>Separate <strong>LoRA stage</strong> learns markup control on ~180 hours of English data, likely after RL</li>
+<li>Tag embeddings may remain poorly learned — LoRA updates model layers, not the embedding table</li>
+<li>Style control <strong>transfers to other languages</strong> despite English-only markup training</li>
+<li>Combining tags creates <strong>meaningful new styles</strong> not seen during training</li>
+<li>Speaker embeddings may help separate speaker and style, but style can still leak into them</li>
+<li>Paper and code <strong>do not fully match</strong>; some users report tags being spoken aloud; no evidence in code that style tags are actual tags</li>
+<li>In general, <strong>evaluation of style control is very difficult</strong> — no standard metrics or benchmarks</li>
+</ul>
+<div class="columns">
+<div class="column" style="width:50%;">
+<div class="fragment" style="text-align: center;">
+<!-- ![](images/inworld-markups-1.png){height="300px"} -->
+</div>
+</div><div class="column" style="width:50%;">
+<div class="fragment" style="text-align: center;">
+<!-- ![](images/inworld-markups-2.png){height="300px"} -->
+</div>
+</div></div>
+</section>
+<section id="inworld-evaluation" class="slide level2">
+<h2>Inworld — Evaluation</h2>
+<div class="columns">
+<div class="column" style="width:30%;">
+<div style="text-align: center;">
+<p><img data-src="images/inworld-eval-wer.png" height="150"></p>
+</div>
+</div><div class="column" style="width:70%;">
+<div style="text-align: center;">
+<p><img data-src="images/inworld-eval-languages.png" height="400"></p>
+</div>
+</div></div>
+<ul>
+<li><strong>WER</strong> (English only) across different text lengths — compared full pipeline (pretrain + SFT + RL) vs SFT only</li>
+<li>Generated <strong>100 sentences</strong> for each of <strong>11 supported languages</strong>, synthesized with same set of speakers (Small and Large)</li>
+<li><strong>Internal arena</strong>: 20 human voters, 400 evaluations total</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-eval-arena.png" height="250"></p>
+</div>
 </section>
 <section id="references" class="slide level2">
 <h2>References</h2>
