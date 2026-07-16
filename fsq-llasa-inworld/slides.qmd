@@ -3,7 +3,7 @@ title: "FSQ, LLaSA & Inworld TTS"
 author: "Vladislav Stankov"
 format:
   revealjs:
-    incremental: false
+    incremental: true
     highlight-style: monokai    # or: github, dracula, zenburn, atom-one-dark, etc.
     chalkboard: true
     theme: [default, custom.scss]
@@ -315,9 +315,8 @@ Inference compute scaling — three strategies:
 
 - **GRPO**: sample several audio completions for the same prompt, reinforce outputs scoring **above group average**, suppress those below
 - Rewards computed on decoded 48 kHz waveform: **Whisper WER**, **WavLM speaker similarity**, **DNSMOS quality**
-- Train both **single-reward** variants and a **unified model** (three normalized rewards summed with equal weights)
 - **Clipped updates + KL penalty** keep RL model close to SFT checkpoint — reduces reward-driven degeneration
-- Compare three **specialized models** (one reward each) vs one **unified model** (all three rewards)
+- Trained **3 specialized TTS models** (each optimizing one reward) and **1 unified TTS model** (all three rewards) — to check if joint optimization loses quality
 
 ::: {.fragment style="text-align: center;"}
 ![](images/inworld-rl-results.png){height="550px"}
@@ -326,7 +325,7 @@ Inference compute scaling — three strategies:
 ## Inworld — Audio Markups
 
 - Tags control style and non-verbals: `[angry]`, `[whispering]`, `[laugh]`, `[sigh]`
-- Adding style tags during normal SFT **failed** — model often ignored them
+- Adding **style tags** during normal SFT **failed** — model often ignored them
 - Codec tokens mix speaker identity, style, prosody, and content
 - Train on same-speaker **neutral + styled recordings** joined by silence
 - Separate **LoRA stage** learns markup control on ~180 hours of English data, likely after RL
@@ -366,8 +365,9 @@ Inference compute scaling — three strategies:
 ::::
 
 - **WER** (English only) across different text lengths — compared full pipeline (pretrain + SFT + RL) vs SFT only
-- Generated **100 sentences** for each of **11 supported languages**, synthesized with same set of speakers (Small and Large)
+- Generated **100 sentences** for **11 supported languages**, synthesized with same speakers (Small and Large)
 - **Internal arena**: 20 human voters, 400 evaluations total
+- Workflow for best quality: use **LoRA to fine-tune on a single speaker** instead of zero-shot
 
 ::: {.fragment style="text-align: center;"}
 ![](images/inworld-eval-arena.png){height="250px"}
