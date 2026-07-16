@@ -11,7 +11,7 @@ format:
     width: 1920
     height: 1080
     html-math-method: katex
-    transition: zoom           # none, fade, slide, convex, concave, zoom
+    transition: slide           # none, fade, slide, convex, concave, zoom
     hide-cursor-time: 5000      # auto-hide cursor after ms of inactivity
     pointer:
       key: "p"
