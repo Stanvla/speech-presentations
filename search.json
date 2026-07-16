@@ -123,7 +123,7 @@
     "href": "fsq-llasa-inworld/slides.html#inworld-reinforcement-learning",
     "title": "FSQ, LLaSA & Inworld TTS",
     "section": "Inworld — Reinforcement Learning",
-    "text": "Inworld — Reinforcement Learning\n\nGRPO: sample several audio completions for the same prompt, reinforce outputs scoring above group average, suppress those below\nRewards computed on decoded 48 kHz waveform: Whisper WER, WavLM speaker similarity, DNSMOS quality\nTrain both single-reward variants and a unified model (three normalized rewards summed with equal weights)\nClipped updates + KL penalty keep RL model close to SFT checkpoint — reduces reward-driven degeneration\nCompare three specialized models (one reward each) vs one unified model (all three rewards)"
+    "text": "Inworld — Reinforcement Learning\n\nGRPO: sample several audio completions for the same prompt, reinforce outputs scoring above group average, suppress those below\nRewards computed on decoded 48 kHz waveform: Whisper WER, WavLM speaker similarity, DNSMOS quality\nClipped updates + KL penalty keep RL model close to SFT checkpoint — reduces reward-driven degeneration\nTrained 3 specialized TTS models (each optimizing one reward) and 1 unified TTS model (all three rewards) — to check if joint optimization loses quality"
   },
   {
     "objectID": "fsq-llasa-inworld/slides.html#inworld-audio-markups",
@@ -137,7 +137,7 @@
     "href": "fsq-llasa-inworld/slides.html#inworld-evaluation",
     "title": "FSQ, LLaSA & Inworld TTS",
     "section": "Inworld — Evaluation",
-    "text": "Inworld — Evaluation\n\n\n\n\n\n\n\n\n\n\n\nWER (English only) across different text lengths — compared full pipeline (pretrain + SFT + RL) vs SFT only\nGenerated 100 sentences for each of 11 supported languages, synthesized with same set of speakers (Small and Large)\nInternal arena: 20 human voters, 400 evaluations total"
+    "text": "Inworld — Evaluation\n\n\n\n\n\n\n\n\n\n\n\nWER (English only) across different text lengths — compared full pipeline (pretrain + SFT + RL) vs SFT only\nGenerated 100 sentences for 11 supported languages, synthesized with same speakers (Small and Large)\nInternal arena: 20 human voters, 400 evaluations total\nWorkflow for best quality: use LoRA to fine-tune on a single speaker instead of zero-shot"
   },
   {
     "objectID": "fsq-llasa-inworld/slides.html#references",
