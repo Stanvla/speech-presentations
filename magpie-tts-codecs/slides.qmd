@@ -3,7 +3,7 @@ title: "Magpie TTS -- Codecs Evolution"
 author: "Vladislav Stankov"
 format:
   revealjs:
-    incremental: false
+    incremental: true
     highlight-style: monokai
     chalkboard: true
     theme: [default, custom.scss]
@@ -51,7 +51,14 @@ format:
 
 ## MRF — Continued
 
-![](images/hifigan-mrf.png){.nostretch fig-align="center" width="45%"}
+:::: {.columns}
+::: {.column width="50%"}
+![](images/hifigan-mrf.png){.nostretch}
+:::
+::: {.column width="50%"}
+![](images/dilated-convolution.png){.nostretch}
+:::
+::::
 
 ```python
 for i in range(self.num_upsamples):               # 4 stages, k_u = (16, 16, 4, 4)
@@ -78,9 +85,9 @@ for i in range(self.num_upsamples):               # 4 stages, k_u = (16, 16, 4, 
 - **Multi-Period Discriminator** — different periods, usually primes $[2, 3, 5, 7, 11]$, so it can analyse different periodic patterns in the audio
 - Usually all discriminators are paired with a **feature matching loss**:
 
-$$\mathcal{L}_{FM}(G) = \mathbb{E}_{(x, s)} \left[ \frac{1}{K} \sum_{k=1}^{K} \frac{1}{T_k} \sum_{i=1}^{T_k} \frac{1}{N_{k,i}} \left\lVert D_k^i(x) - D_k^i(G(s)) \right\rVert_1 \right]$$
+  $$\mathcal{L}_{FM}(G) = \mathbb{E}_{(x, s)} \left[ \frac{1}{K} \sum_{k=1}^{K} \frac{1}{T_k} \sum_{i=1}^{T_k} \frac{1}{N_{k,i}} \left\lVert D_k^i(x) - D_k^i(G(s)) \right\rVert_1 \right]$$
 
-where $D_k^i$ are the layer-$i$ features of discriminator $k$ and $N_{k,i}$ their element count
+  where $D_k^i$ are the layer-$i$ features of discriminator $k$ and $N_{k,i}$ their element count
 
 ## Spectral Discriminator
 
@@ -96,6 +103,7 @@ where $D_k^i$ are the layer-$i$ features of discriminator $k$ and $N_{k,i}$ thei
 # Spectral Codec {background-color="#2d4059"}
 
 ## Spectral Codec — Outline
+![](images/spectral-codec-arch.png){fig-align="center" width="80%"}
 
 - Operates on **mel spectrograms** rather than raw waveforms; compares RVQ vs FSQ quantization
 - Evaluates downstream TTS quality with both AR and NAR FastPitch variants
@@ -105,38 +113,42 @@ where $D_k^i$ are the layer-$i$ features of discriminator $k$ and $N_{k,i}$ thei
 - Training losses: multi-resolution mel spectrogram + multi-resolution log-magnitude STFT
 - Adversarial training: MPD + multi-scale complex STFT discriminator
 
-![](images/spectral-codec-arch.png){fig-align="center" width="80%"}
 
 ## Spectral Codec — Details
 
 <div style="display: flex; gap: 1.5em; margin-bottom: 1em;">
-<div style="flex: 6; background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
+<div class="fragment" style="flex: 6; background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
 <span style="font-size: 1.3em; font-weight: 700;">Spectral Variant</span>
 
+::: {.nonincremental}
 - **Asymmetric**: mel spectrogram input → latent dim 32 (FSQ) or 128 (RVQ)
 - **FSQ**: 8 parallel codebooks, each quantizing 4 dims into $[8, 5, 5, 5]$ levels
 - **RVQ**: 8 codebooks of size 1024
+:::
 
 </div>
-<div style="flex: 4; background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
+<div class="fragment" style="flex: 4; background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
 <span style="font-size: 1.3em; font-weight: 700;">Waveform Variant</span>
 
+::: {.nonincremental}
 - **Symmetric**: encoder mirrors the HiFi-GAN decoder
 - FSQ and RVQ setups identical to the spectral variant
+:::
 
 </div>
 </div>
 
-<div style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
+<div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
 <span style="font-size: 1.3em; font-weight: 700;">Downstream TTS</span>
 
+::: {.nonincremental}
 - **FastPitch (NAR)**: predicts mel spectrogram from text, pitch, and energy inputs
 - 8 parallel heads with softmax classification instead of L2 regression
 - **AR variant**: adds causal attention and additional feed-forward layers
-
+:::
 
 </div>
 
@@ -175,9 +187,9 @@ where $D_k^i$ are the layer-$i$ features of discriminator $k$ and $N_{k,i}$ thei
 - **Partial Flattening** — a reorganised Coarse First pattern: after the first codebook, all remaining codebooks are predicted in the **next single step**
 - **Partial Delay** — Delay + Parallel patterns: after the first codebook, the rest are predicted **in parallel** (Moshi)
 
-<div style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
+<div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
-Except for the Parallel pattern, the model input at time $t$ is **not** the audio representation at $t$ — it is simply the **sum of the previous predictions** at $t-1$, laid out according to the pattern. For the Delay pattern:
+Except for the Parallel pattern, the model input at time $t$ is **not** the audio representation at $(t-1)$ — it is simply the **sum of the previous predictions** at $t-1$, according to the pattern. For the Delay pattern:
 
 $$X_{t+1} = \text{emb}_1\big(q_{t,\,1}\big) + \text{emb}_2\big(q_{t-1,\,2}\big) + \dots + \text{emb}_K\big(q_{t-K+1,\,K}\big)$$
 
@@ -221,7 +233,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 - During early training, cross-attention is multiplied by a **static 2D beta-binomial prior**
 - The prior is a matrix with **cigar-shaped diagonal** values, given by the beta-binomial PMF:
 
-$$f_B(k;\, n, \alpha, \beta) = \binom{n}{k} \frac{B(k + \alpha,\; n - k + \beta)}{B(\alpha, \beta)}$$
+  $$f_B(k;\, n, \alpha, \beta) = \binom{n}{k} \frac{B(k + \alpha,\; n - k + \beta)}{B(\alpha, \beta)}$$
 
 - It is evaluated as $P_{k,t} = f_B\big(k;\, N,\; \omega t,\; \omega (T - t + 1)\big)$, where $\omega$ is a **width factor**, $k$ the **text token index**, $t$ the **audio token index**, $N$ the **text length** and $T$ the **audio length**
 - **Schedule:** for the first $S_1$ steps simply multiply cross-attention by the prior, then over the next $S_2$ steps **anneal** it towards a matrix of all ones
@@ -229,9 +241,9 @@ $$f_B(k;\, n, \alpha, \beta) = \binom{n}{k} \frac{B(k + \alpha,\; n - k + \beta)
 - **Observation:** the CTC loss formulation allows all possible **monotonic alignments** to be considered
 - Given that the audio token sequence is longer than the text token sequence, the CTC loss can be computed on **all cross-attention matrices** → penalising the model for **non-monotonic** attention
 
-$$\mathcal{L}_{\text{align}} = \text{CTCLoss}\big(\log A,\; y\big), \qquad A \in \mathbb{R}^{T \times N}$$
+  $$\mathcal{L}_{\text{align}} = \text{CTCLoss}\big(\log A,\; y\big), \qquad A \in \mathbb{R}^{T \times N}$$
 
-where $A$ is the cross-attention matrix (audio steps $\times$ text tokens) treated as per-step emission probabilities, and $y$ is the text transcript
+  where $A$ is the cross-attention matrix (audio steps $\times$ text tokens) treated as per-step emission probabilities, and $y$ is the text transcript
 
 ## Cross-Attention Visualized
 
@@ -247,7 +259,7 @@ where $A$ is the cross-attention matrix (audio steps $\times$ text tokens) treat
 - Authors experimented with **where to place the audio prompt**: encoder or decoder
 - There is no version with $\mathcal{L}_{align}$ (CTC loss) but **without the prior** — results were **unintelligible**, even though the attention was monotonic
 
-![](images/t5-codec-comparison.png){.nostretch fig-align="center" width="45%"}
+![](images/t5-codec-comparison.png){.fragment .nostretch fig-align="center" width="45%"}
 
 - As we will see later, even though **DAC** has the best reconstruction, it does **not** perform well downstream
 
@@ -275,7 +287,7 @@ where $A$ is the cross-attention matrix (audio steps $\times$ text tokens) treat
   - Adds a **convolutional WavLM-based discriminator**
   - Operates at **22.05 kHz**
 
-<div style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
+<div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
 **LSFC Encoder:** HiFi-GAN **MRF** blocks with **dilation rate 1**, each followed by a strided **1D conv** for downsampling → strides mirror the decoder's upsampling
 
@@ -304,12 +316,14 @@ where $A$ is the cross-attention matrix (audio steps $\times$ text tokens) treat
 - **RVQ** uses a **delay pattern**; the Spectral Codec and LFSC are predicted **in parallel**
 - Much better than the baselines, and also beats the **4032**-level FSQ variant
 
-<div style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
+<div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
 **Reconstruction quality is not fully aligned with TTS quality**
 
+::: {.nonincremental}
 - **FSQ 4032** reconstructs well but performs worse downstream
 - The strongest **DAC** model is only good at reconstruction — it was never optimized for TTS
+:::
 
 </div>
 
@@ -324,8 +338,9 @@ where $A$ is the cross-attention matrix (audio steps $\times$ text tokens) treat
   - Replaces the complex **MS-STFT** discriminator with a **multi-band MS-STFT** discriminator
   - Adds a **speaker consistency loss** — maximise the cosine similarity between speaker embeddings of the real and reconstructed audio:
 
-  $$\mathcal{L}_{SC} = -\frac{\alpha}{N} \sum_{n=1}^{N} \cos\left(\phi(x_n),\; \phi(\hat{x}_n)\right) = -\frac{\alpha}{N} \sum_{n=1}^{N} \frac{\phi(x_n) \cdot \phi(\hat{x}_n)}{\lVert \phi(x_n) \rVert_2 \, \lVert \phi(\hat{x}_n) \rVert_2}$$
-  where $\phi$ is a pretrained speaker verification encoder and $\hat{x}_n = G(x_n)$
+    $$\mathcal{L}_{SC} = -\frac{\alpha}{N} \sum_{n=1}^{N} \cos\left(\phi(x_n),\; \phi(\hat{x}_n)\right) = -\frac{\alpha}{N} \sum_{n=1}^{N} \frac{\phi(x_n) \cdot \phi(\hat{x}_n)}{\lVert \phi(x_n) \rVert_2 \, \lVert \phi(\hat{x}_n) \rVert_2}$$
+
+    where $\phi$ is a pretrained speaker verification encoder and $\hat{x}_n = G(x_n)$
 
 ## Nano Codec — Ablations
 
