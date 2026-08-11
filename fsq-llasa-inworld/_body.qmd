@@ -168,12 +168,12 @@ Evaluation protocol borrowed from **BASE TTS**:
 :::: {.columns}
 ::: {.column width="60%"}
 ::: {.fragment style="text-align: center;"}
-![](images/llasa-training-scaling.png){height="300px"}
+![](images/llasa-training-scaling.png){height="260px"}
 :::
 :::
 ::: {.column width="40%"}
 ::: {.fragment style="text-align: center;"}
-![](images/base-tts-training-scaling.png){height="320px"}
+![](images/base-tts-training-scaling.png){height="290px"}
 :::
 :::
 ::::
