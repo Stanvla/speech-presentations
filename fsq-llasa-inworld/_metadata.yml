@@ -2,6 +2,7 @@
 author: "Vladislav Stankov"
 format:
   revealjs:
+    footer: "[← All talks](../index.html)"
     highlight-style: monokai
     theme: [default, custom.scss]
     slide-number: true
