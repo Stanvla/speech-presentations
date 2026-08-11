@@ -1,9 +1,11 @@
 ---
 title: "FSQ, LLaSA & Inworld TTS"
+subtitle: "Handout"
 format:
   revealjs:
-    incremental: true
-    chalkboard: true
+    incremental: false
+    chalkboard: false
+    fragments: false
 ---
 
 {{< include _body.qmd >}}

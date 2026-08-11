@@ -1,0 +1,17 @@
+# Applies to every .qmd in this folder: slides.qmd and handout.qmd
+author: "Vladislav Stankov"
+format:
+  revealjs:
+    highlight-style: monokai
+    theme: [default, custom.scss]
+    slide-number: true
+    code-block-font-size: 0.8em
+    width: 1920
+    height: 1080
+    html-math-method: katex
+    transition: slide
+    hide-cursor-time: 5000
+    pointer:
+      key: "p"
+      color: "#e63946"
+      pointerSize: 18
