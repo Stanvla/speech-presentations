@@ -1,0 +1,51 @@
+/*-- scss:defaults --*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code&display=swap');
+
+$font-family-sans-serif: 'Inter', sans-serif;
+$code-font-family: 'Fira Code', monospace;
+$presentation-heading-font: 'Inter', sans-serif;
+$presentation-font-size-root: 36px;
+
+/*-- scss:rules --*/
+.reveal .columns {
+  gap: 3em !important;
+  margin-bottom: 1.5em;
+}
+
+// LaTeX wrapfigure equivalent: text flows around a corner-placed image
+.reveal .wrapfig {
+  float: right;
+  width: 26%;
+  margin: 0 0 1em 2em;
+
+  figure,
+  p {
+    margin: 0;
+  }
+
+  img {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+.reveal .wrapfig-left {
+  @extend .wrapfig;
+  float: left;
+  margin: 0 2em 1em 0;
+}
+
+// reveal sets lists to inline-block, which makes them sit beside a float instead
+// of flowing around it
+.reveal .wrapfig ~ ul,
+.reveal .wrapfig ~ ol,
+.reveal .wrapfig-left ~ ul,
+.reveal .wrapfig-left ~ ol {
+  display: block;
+  margin-left: 1em;
+}
+
+// display math defaults to overflow:auto, which blocks float wrapping
+.reveal .katex-display {
+  overflow: visible;
+}
