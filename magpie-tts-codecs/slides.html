@@ -255,7 +255,7 @@ Vladislav Stankov
 
 </section>
 <section id="multi-receptive-field-fusion-hifi-gan" class="slide level2">
-<h2>Multi-Receptive Field Fusion (Hifi-GAN)</h2>
+<h2>Multi-Receptive Field Fusion (HiFi-GAN)</h2>
 
 <img data-src="images/hifigan-mrf.png" class="quarto-figure quarto-figure-center r-stretch" style="width:70.0%"><ul>
 <li class="fragment"><strong>Multi-Receptive Field Fusion</strong>: models patterns of various lengths — one dedicated residual block per “length”, returning the <strong>sum</strong> of all residual blocks</li>
@@ -285,9 +285,9 @@ Vladislav Stankov
 <span id="cb1-10"><a></a>        xs <span class="op">=</span> xs <span class="op">+</span> res</span>
 <span id="cb1-11"><a></a>    x <span class="op">=</span> xs <span class="op">/</span> <span class="va">self</span>.num_kernels                     <span class="co"># same shape as x</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ul>
-<li class="fragment">As the kernel grows, so does the receptive field of the <span class="math inline">i</span>-th residual block.</li>
-<li class="fragment">Only <code>transposed_convs[i]</code> changes the shape.</li>
-<li class="fragment">All <span class="math inline">|k_r|</span> branches receive the same <code>x</code> and are shape-preserving.</li>
+<li class="fragment">As the kernel grows, so does the receptive field of the <span class="math inline">i</span>-th residual block</li>
+<li class="fragment">Only <code>transposed_convs[i]</code> changes the shape</li>
+<li class="fragment">All <span class="math inline">|k_r|</span> branches receive the same <code>x</code> and are shape-preserving</li>
 </ul>
 </section>
 <section id="waveform-discriminators" class="slide level2">
@@ -299,7 +299,7 @@ Vladislav Stankov
 </div>
 <ul>
 <li class="fragment"><p><strong>Multi-Scale Discriminator</strong> — different scale, i.e.&nbsp;receptive field: raw audio, ×2 avg-pooled, ×4 avg-pooled</p></li>
-<li class="fragment"><p><strong>Multi-Period Discriminator</strong> — different periods, usually primes <span class="math inline">[2, 3, 5, 7, 11]</span>, so it can analyse different periodic patterns in the audio</p></li>
+<li class="fragment"><p><strong>Multi-Period Discriminator</strong> — different periods, usually primes <span class="math inline">[2, 3, 5, 7, 11]</span>, so it can analyze different periodic patterns in the audio</p></li>
 <li class="fragment"><p>Usually all discriminators are paired with a <strong>feature matching loss</strong>:</p>
 <p><span class="math display">\mathcal{L}_{FM}(G) = \mathbb{E}_{(x, s)} \left[ \frac{1}{K} \sum_{k=1}^{K} \frac{1}{T_k} \sum_{i=1}^{T_k} \frac{1}{N_{k,i}} \left\lVert D_k^i(x) - D_k^i(G(s)) \right\rVert_1 \right]</span></p>
 <p>where <span class="math inline">D_k^i</span> are the layer-<span class="math inline">i</span> features of discriminator <span class="math inline">k</span> and <span class="math inline">N_{k,i}</span> their element count</p></li>
@@ -336,7 +336,7 @@ Vladislav Stankov
 <li class="fragment">Evaluates downstream TTS quality with both AR and NAR FastPitch variants</li>
 <li class="fragment">Adopts <strong>group quantization</strong> (HiFi-Codec): partition the latent into groups, quantize each independently</li>
 <li class="fragment"><strong>44.1 kHz HiFi-GAN</strong> vocoder as the waveform decoder</li>
-<li class="fragment"><strong>86.1 tokens/s</strong> across 8 parallel codebooks (size 1 k each) → 6.9 kbps</li>
+<li class="fragment"><strong>86.1 tokens/s</strong> across 8 parallel codebooks (size 1k each) → 6.9 kbps</li>
 <li class="fragment">Training losses: multi-resolution mel spectrogram + multi-resolution log-magnitude STFT</li>
 <li class="fragment">Adversarial training: MPD + multi-scale complex STFT discriminator</li>
 </ul>
@@ -392,11 +392,11 @@ Vladislav Stankov
 <ul>
 <li class="fragment">GPT with multiple heads, <strong>4 codebooks</strong>, sequence length <span class="math inline">n</span></li>
 <li class="fragment">The pattern decides how the <span class="math inline">4 \times n</span> token grid is unrolled into decoding steps</li>
-<li class="fragment"><strong>Flattening</strong> — all codebooks serialised → <span class="math inline">4n</span> steps, slowest but fully autoregressive</li>
+<li class="fragment"><strong>Flattening</strong> — all codebooks serialized → <span class="math inline">4n</span> steps, slowest but fully autoregressive</li>
 <li class="fragment"><strong>Parallel</strong> — emit a whole timestep at once → <span class="math inline">n</span> steps, but codebooks are assumed <strong>independent</strong></li>
 <li class="fragment"><strong>Coarse First</strong> — a <strong>single model</strong>: codebook 1 is generated for the whole sequence first, then the remaining codebooks in parallel → <span class="math inline">2n</span> steps
 <ul>
-<li class="fragment"><strong>Coarse First</strong> <span class="math inline">\neq</span> <strong>VALL-E</strong>, which realises the same coarse-to-fine idea with <strong>two models</strong> — AR for codebook 1 + NAR for the rest, in <span class="math inline">n + (4 - 1)</span> steps</li>
+<li class="fragment"><strong>Coarse First</strong> <span class="math inline">\neq</span> <strong>VALL-E</strong>, which realizes the same coarse-to-fine idea with <strong>two models</strong> — AR for codebook 1 + NAR for the rest, in <span class="math inline">n + (4 - 1)</span> steps</li>
 </ul></li>
 <li class="fragment"><strong>Delay</strong> — keeps RVQ’s dependency (codebook <span class="math inline">i</span> conditioned on <span class="math inline">i-1</span>) by <strong>offsetting codebook <span class="math inline">i</span> by <span class="math inline">i-1</span> steps</strong>
 <ul>
@@ -413,11 +413,11 @@ Vladislav Stankov
 </figure>
 </div>
 <ul>
-<li class="fragment"><strong>Partial Flattening</strong> — a reorganised Coarse First pattern: after the first codebook, all remaining codebooks are predicted in the <strong>next single step</strong></li>
+<li class="fragment"><strong>Partial Flattening</strong> — a reorganized Coarse First pattern: after the first codebook, all remaining codebooks are predicted in the <strong>next single step</strong></li>
 <li class="fragment"><strong>Partial Delay</strong> — Delay + Parallel patterns: after the first codebook, the rest are predicted <strong>in parallel</strong> (Moshi)</li>
 </ul>
 <div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
-<p>Except for the Parallel pattern, the model input at time <span class="math inline">t</span> is <strong>not</strong> the audio representation at <span class="math inline">(t-1)</span> — it is simply the <strong>sum of the previous predictions</strong> at <span class="math inline">t-1</span>, according to the pattern. For the Delay pattern:</p>
+<p>Except for the Parallel pattern, the model input at time <span class="math inline">t</span> is <strong>not</strong> the audio representation at <span class="math inline">t</span> — it is simply the <strong>sum of the previous predictions</strong> at <span class="math inline">t-1</span>, according to the pattern. For the Delay pattern:</p>
 <p><span class="math display">X_{t+1} = \text{emb}_1\big(q_{t,\,1}\big) + \text{emb}_2\big(q_{t-1,\,2}\big) + \dots + \text{emb}_K\big(q_{t-K+1,\,K}\big)</span></p>
 <p>Whether head <span class="math inline">k</span> is <strong>active</strong> at time <span class="math inline">t</span> also depends on the pattern — inactive heads contribute a special token instead of a prediction.</p>
 </div>
@@ -456,7 +456,7 @@ Vladislav Stankov
 <li class="fragment">This allows training <strong>without any alignment information</strong>, but the learned alignment is <strong>unconstrained</strong> and may not be strictly <strong>monotonic</strong></li>
 <li class="fragment">Non-monotonicity causes various errors — <strong>word skipping</strong>, <strong>repetition</strong>, even <strong>infinite silence</strong> — making models unreliable for production</li>
 <li class="fragment">The issue becomes more visible on <strong>complex inputs</strong> (e.g.&nbsp;repeated words)</li>
-<li class="fragment"><strong>Defaults:</strong> Pretrained Encoder-Decoder T5-TTS model with the <strong>Spectral Codec</strong>, 1.8k hours of English</li>
+<li class="fragment"><strong>Defaults:</strong> pretrained encoder–decoder T5-TTS model with the <strong>Spectral Codec</strong>, 1.8k hours of English</li>
 <li class="fragment">Trained on <strong>triples</strong> — (text to generate, audio prompt, audio to generate); unlike other approaches, the <strong>transcript of the audio prompt is not used</strong></li>
 <li class="fragment"><strong>Paper contributions:</strong>
 <ul>
@@ -477,7 +477,7 @@ Vladislav Stankov
 <li class="fragment"><p>It is evaluated as <span class="math inline">P_{k,t} = f_B\big(k;\, N,\; \omega t,\; \omega (T - t + 1)\big)</span>, where <span class="math inline">\omega</span> is a <strong>width factor</strong>, <span class="math inline">k</span> the <strong>text token index</strong>, <span class="math inline">t</span> the <strong>audio token index</strong>, <span class="math inline">N</span> the <strong>text length</strong> and <span class="math inline">T</span> the <strong>audio length</strong></p></li>
 <li class="fragment"><p><strong>Schedule:</strong> for the first <span class="math inline">S_1</span> steps simply multiply cross-attention by the prior, then over the next <span class="math inline">S_2</span> steps <strong>anneal</strong> it towards a matrix of all ones</p></li>
 <li class="fragment"><p><strong>Observation:</strong> the CTC loss formulation allows all possible <strong>monotonic alignments</strong> to be considered</p></li>
-<li class="fragment"><p>Given that the audio token sequence is longer than the text token sequence, the CTC loss can be computed on <strong>all cross-attention matrices</strong> → penalising the model for <strong>non-monotonic</strong> attention</p>
+<li class="fragment"><p>Given that the audio token sequence is longer than the text token sequence, the CTC loss can be computed on <strong>all cross-attention matrices</strong> → penalizing the model for <strong>non-monotonic</strong> attention</p>
 <p><span class="math display">\mathcal{L}_{\text{align}} = \text{CTCLoss}\big(\log A,\; y\big), \qquad A \in \mathbb{R}^{T \times N}</span></p>
 <p>where <span class="math inline">A</span> is the cross-attention matrix (audio steps <span class="math inline">\times</span> text tokens) treated as per-step emission probabilities, and <span class="math inline">y</span> is the text transcript</p></li>
 </ul>
@@ -498,8 +498,8 @@ Vladislav Stankov
 </figure>
 </div>
 <ul>
-<li class="fragment">Authors experimented with <strong>where to place the audio prompt</strong>: encoder or decoder</li>
-<li class="fragment">There is no version with <span class="math inline">\mathcal{L}_{align}</span> (CTC loss) but <strong>without the prior</strong> — results were <strong>unintelligible</strong>, even though the attention was monotonic</li>
+<li class="fragment">The authors experimented with <strong>where to place the audio prompt</strong>: encoder or decoder</li>
+<li class="fragment">There is no version with <span class="math inline">\mathcal{L}_{\text{align}}</span> (CTC loss) but <strong>without the prior</strong> — results were <strong>unintelligible</strong>, even though the attention was monotonic</li>
 </ul>
 <div class="quarto-figure quarto-figure-center">
 <figure>
@@ -520,7 +520,7 @@ Vladislav Stankov
 <ul>
 <li class="fragment">For the baselines the authors took <strong>pretrained models with official checkpoints</strong></li>
 <li class="fragment"><strong>WER evaluation</strong> — 100 <strong>challenging texts</strong> and 2 <strong>seen speakers</strong> (male and female)</li>
-<li class="fragment"><strong>MOS evaluation</strong> — 100 sentences from the <strong>Harvard Sentences</strong>, each audio rated by at least <strong>10 listeners</strong> → <strong>2 k</strong> evaluations per model</li>
+<li class="fragment"><strong>MOS evaluation</strong> — 100 sentences from the <strong>Harvard Sentences</strong>, each audio rated by at least <strong>10 listeners</strong> → <strong>2k</strong> evaluations per model</li>
 </ul>
 </section></section>
 <section>
@@ -548,7 +548,7 @@ Vladislav Stankov
 </ul></li>
 </ul>
 <div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
-<p><strong>LSFC Encoder:</strong> HiFi-GAN <strong>MRF</strong> blocks with <strong>dilation rate 1</strong>, each followed by a strided <strong>1D conv</strong> for downsampling → strides mirror the decoder’s upsampling</p>
+<p><strong>LFSC Encoder:</strong> HiFi-GAN <strong>MRF</strong> blocks with <strong>dilation rate 1</strong>, each followed by a strided <strong>1D conv</strong> for downsampling → strides mirror the decoder’s upsampling</p>
 </div>
 </section>
 <section id="low-frame-rate-codec-reconstruction" class="slide level2">
@@ -584,7 +584,7 @@ Vladislav Stankov
 </figure>
 </div>
 <ul>
-<li class="fragment">Encoder–decoder <strong>T5-TTS</strong> trained on <strong>1.8 k hours</strong> of English</li>
+<li class="fragment">Encoder–decoder <strong>T5-TTS</strong> trained on <strong>1.8k hours</strong> of English</li>
 <li class="fragment"><strong>RVQ</strong> uses a <strong>delay pattern</strong>; the Spectral Codec and LFSC are predicted <strong>in parallel</strong></li>
 <li class="fragment">Much better than the baselines, and also beats the <strong>4032</strong>-level FSQ variant</li>
 </ul>
@@ -610,7 +610,7 @@ Vladislav Stankov
 <li class="fragment"><p>Different <strong>dilation rates</strong> in the encoder</p></li>
 <li class="fragment"><p>Experiments with <strong>causality</strong> in the encoder and decoder by switching to <strong>causal convolutions</strong></p></li>
 <li class="fragment"><p>Replaces the complex <strong>MS-STFT</strong> discriminator with a <strong>multi-band MS-STFT</strong> discriminator</p></li>
-<li class="fragment"><p>Adds a <strong>speaker consistency loss</strong> — maximise the cosine similarity between speaker embeddings of the real and reconstructed audio:</p>
+<li class="fragment"><p>Adds a <strong>speaker consistency loss</strong> — maximize the cosine similarity between speaker embeddings of the real and reconstructed audio:</p>
 <p><span class="math display">\mathcal{L}_{SC} = -\frac{\alpha}{N} \sum_{n=1}^{N} \cos\left(\phi(x_n),\; \phi(\hat{x}_n)\right) = -\frac{\alpha}{N} \sum_{n=1}^{N} \frac{\phi(x_n) \cdot \phi(\hat{x}_n)}{\lVert \phi(x_n) \rVert_2 \, \lVert \phi(\hat{x}_n) \rVert_2}</span></p>
 <p>where <span class="math inline">\phi</span> is a pretrained speaker verification encoder and <span class="math inline">\hat{x}_n = G(x_n)</span></p></li>
 </ul></li>
@@ -628,7 +628,7 @@ Vladislav Stankov
 <li class="fragment">The <strong>partially causal</strong> model is a good trade-off and better suited to downstream TTS — the only version used from then on</li>
 <li class="fragment"><strong>6.25 fps</strong> performs poorly; between <strong>12.5</strong> and <strong>25 fps</strong> the authors keep <strong>12.5 fps</strong>, since it is comparable on CER, SECS and SQMOS</li>
 <li class="fragment">Bitrate reduction (smaller codebooks) is <strong>strongly correlated</strong> with worse CER and SECS</li>
-<li class="fragment">Finally, <strong>12.5 fps with more FSQ layers</strong> vs <strong>21.5 fps with fewer layers</strong> turn out comparable on all metrics</li>
+<li class="fragment">Finally, <strong>12.5 fps with more FSQ layers</strong> vs <strong>21.5 fps with fewer layers</strong> turn out to be comparable on all metrics</li>
 </ul>
 </section>
 <section id="nano-codec-zero-shot-tts-results" class="slide level2">
@@ -639,8 +639,8 @@ Vladislav Stankov
 </figure>
 </div>
 <ul>
-<li class="fragment"><strong>Koel-TTS</strong> — encoder–decoder TTS similar to T5, trained with <strong>CFG</strong> but without <strong>DPO</strong> (RL); a separate model is trained per codec on <strong>18 k hours</strong> of English</li>
-<li class="fragment">Results are <strong>better or comparable to the LFSC</strong> with a much smaller latency (<strong>TTFA</strong>)</li>
+<li class="fragment"><strong>Koel-TTS</strong> — encoder–decoder TTS similar to T5, trained with <strong>CFG</strong> but without <strong>DPO</strong> (RL); a separate model is trained per codec on <strong>18k hours</strong> of English</li>
+<li class="fragment">Results are <strong>better than or comparable to the LFSC</strong>, with much lower latency (<strong>TTFA</strong>)</li>
 <li class="fragment">Visible <strong>speaker similarity gap</strong> between <strong>12.5</strong> and <strong>21.5 fps</strong> — interesting observation that at a lower frame rate the prompt is shorter, which itself hurts speaker similarity</li>
 </ul>
 
