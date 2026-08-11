@@ -1,185 +1,339 @@
 [
   {
-    "objectID": "magpie-tts-codecs/slides.html#magpie-tts-overview",
-    "href": "magpie-tts-codecs/slides.html#magpie-tts-overview",
+    "objectID": "magpie-tts-codecs/handout.html#magpie-tts-overview",
+    "href": "magpie-tts-codecs/handout.html#magpie-tts-overview",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Magpie TTS — Overview",
     "text": "Magpie TTS — Overview\n\nNVIDIA’s state-of-the-art multilingual TTS system, built on the NeMo Speech framework\nNeural audio codec — NanoCodec — decodes those tokens into high-fidelity audio\n5 English speakers and 12 languages: Arabic, Chinese, English, French, German, Hindi, Italian, Japanese, Korean, Portuguese, Spanish, Vietnamese\nPredicts discrete codec tokens autoregressively with a transformer encoder–decoder\nInnovations and tricks:\n\nFrame stacking (factor 2) — two codec frames per decoder step\nLocal transformer — fine-grained refinement within a stacked frame\nAuxiliary CTC loss on the cross-attention matrix to enforce monotonic alignment\nAttention priors — a diagonal prior biases text↔︎audio cross-attention early in training\nClassifier-free guidance (CFG) — drop text and prompt in training, modify logits at inference\nGroup Relative Policy Optimization (GRPO) — RL post-training, group mean replaces the critic\n\nWeights and demo: nvidia/magpie_tts_multilingual_357m"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#multi-receptive-field-fusion-hifi-gan",
-    "href": "magpie-tts-codecs/slides.html#multi-receptive-field-fusion-hifi-gan",
+    "objectID": "magpie-tts-codecs/handout.html#multi-receptive-field-fusion-hifi-gan",
+    "href": "magpie-tts-codecs/handout.html#multi-receptive-field-fusion-hifi-gan",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Multi-Receptive Field Fusion (Hifi-GAN)",
     "text": "Multi-Receptive Field Fusion (Hifi-GAN)\n\n\nMulti-Receptive Field Fusion: models patterns of various lengths — one dedicated residual block per “length”, returning the sum of all residual blocks\nResidual block i is specified by kernel size k_r[i] and dilation rates D_r[i]\nUpsample sizes k_u = (16, 16, 4, 4) — each k_u[i] upsampling layer is followed by its own MRF, and every such MRF contains the same |k_r| residual blocks\nResidual kernels k_r = (3, 7, 11) and dilation rates D_r = ((1,1), (3,1), (5,1)) \\times 3 — note that |k_r| = |D_r|\nE.g. n = 1 → k_r[n] = 7 and D_r[n] = ((1,1), (3,1), (5,1)); for each dilation tuple we perform 2 convolutions in a row"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#mrf-continued",
-    "href": "magpie-tts-codecs/slides.html#mrf-continued",
+    "objectID": "magpie-tts-codecs/handout.html#mrf-continued",
+    "href": "magpie-tts-codecs/handout.html#mrf-continued",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "MRF — Continued",
     "text": "MRF — Continued\n\n\n\n\n\n\nfor i in range(self.num_upsamples):               # 4 stages, k_u = (16, 16, 4, 4)\n    x = self.transposed_convs[i](leaky_relu(x))   # T *= k_u[i] // 2\n    xs = 0                                        # ---------- MRF ----------\n    for n in range(self.num_kernels):             # k_r = (3, 7, 11) parallel branches\n        res = x                                   # residual block, kernel size k_r[n]\n        for c1, c2 in zip(self.convs1[i][n], self.convs2[i][n]):   # D_r = ((1,1), (3,1), (5,1)) × 3\n            h = c1(leaky_relu(res))               # dilation 1, 3, 5\n            h = c2(leaky_relu(h))                 # dilation 1\n            res = res + h                         # 2 convs in a row, then skip\n        xs = xs + res\n    x = xs / self.num_kernels                     # same shape as x\n\nAs the kernel grows, so does the receptive field of the i-th residual block.\nOnly transposed_convs[i] changes the shape.\nAll |k_r| branches receive the same x and are shape-preserving."
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#waveform-discriminators",
-    "href": "magpie-tts-codecs/slides.html#waveform-discriminators",
+    "objectID": "magpie-tts-codecs/handout.html#waveform-discriminators",
+    "href": "magpie-tts-codecs/handout.html#waveform-discriminators",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Waveform Discriminators",
     "text": "Waveform Discriminators\n\n\n\n\n\n\nMulti-Scale Discriminator — different scale, i.e. receptive field: raw audio, ×2 avg-pooled, ×4 avg-pooled\nMulti-Period Discriminator — different periods, usually primes [2, 3, 5, 7, 11], so it can analyse different periodic patterns in the audio\nUsually all discriminators are paired with a feature matching loss:\n\\mathcal{L}_{FM}(G) = \\mathbb{E}_{(x, s)} \\left[ \\frac{1}{K} \\sum_{k=1}^{K} \\frac{1}{T_k} \\sum_{i=1}^{T_k} \\frac{1}{N_{k,i}} \\left\\lVert D_k^i(x) - D_k^i(G(s)) \\right\\rVert_1 \\right]\nwhere D_k^i are the layer-i features of discriminator k and N_{k,i} their element count"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#spectral-discriminator",
-    "href": "magpie-tts-codecs/slides.html#spectral-discriminator",
+    "objectID": "magpie-tts-codecs/handout.html#spectral-discriminator",
+    "href": "magpie-tts-codecs/handout.html#spectral-discriminator",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Spectral Discriminator",
     "text": "Spectral Discriminator\n\n\n\n\n\n\nMulti-Scale STFT Discriminator — processes audio with STFTs of different window lengths [2048, 1024, 512, 256, 128], hop size derived from the window size\nPhases are also used (complex part) — bad phase makes the sound less crispy; complex values are just concatenated, not a second channel\nOther variations:\n\nMulti-Resolution Discriminator (MRD) — same STFT resolutions, but magnitude only, phase ignored\nMulti-Scale Mel Discriminator — better for human perception, ignores phase\nMultiple bands — adds another dimension, frequency bands, so each discriminator only looks at specific frequencies"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#spectral-codec-outline",
-    "href": "magpie-tts-codecs/slides.html#spectral-codec-outline",
+    "objectID": "magpie-tts-codecs/handout.html#spectral-codec-outline",
+    "href": "magpie-tts-codecs/handout.html#spectral-codec-outline",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Spectral Codec — Outline",
     "text": "Spectral Codec — Outline\n\n\nOperates on mel spectrograms rather than raw waveforms; compares RVQ vs FSQ quantization\nEvaluates downstream TTS quality with both AR and NAR FastPitch variants\nAdopts group quantization (HiFi-Codec): partition the latent into groups, quantize each independently\n44.1 kHz HiFi-GAN vocoder as the waveform decoder\n86.1 tokens/s across 8 parallel codebooks (size 1 k each) → 6.9 kbps\nTraining losses: multi-resolution mel spectrogram + multi-resolution log-magnitude STFT\nAdversarial training: MPD + multi-scale complex STFT discriminator"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#spectral-codec-details",
-    "href": "magpie-tts-codecs/slides.html#spectral-codec-details",
+    "objectID": "magpie-tts-codecs/handout.html#spectral-codec-details",
+    "href": "magpie-tts-codecs/handout.html#spectral-codec-details",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Spectral Codec — Details",
     "text": "Spectral Codec — Details\n\n\nSpectral Variant\n\nAsymmetric: mel spectrogram input → latent dim 32 (FSQ) or 128 (RVQ)\nFSQ: 8 parallel codebooks, each quantizing 4 dims into [8, 5, 5, 5] levels\nRVQ: 8 codebooks of size 1024\n\n\n\nWaveform Variant\n\nSymmetric: encoder mirrors the HiFi-GAN decoder\nFSQ and RVQ setups identical to the spectral variant\n\n\n\n\nDownstream TTS\n\nFastPitch (NAR): predicts mel spectrogram from text, pitch, and energy inputs\n8 parallel heads with softmax classification instead of L2 regression\nAR variant: adds causal attention and additional feed-forward layers"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#spectral-codec-results",
-    "href": "magpie-tts-codecs/slides.html#spectral-codec-results",
+    "objectID": "magpie-tts-codecs/handout.html#spectral-codec-results",
+    "href": "magpie-tts-codecs/handout.html#spectral-codec-results",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Spectral Codec — Results",
     "text": "Spectral Codec — Results\n\n\nUpper bound: HiFi-GAN without quantization (oracle reconstruction)\nSpectral codecs excel on spectrogram-based metrics; waveform codecs on waveform-based\nRVQ vs FSQ downstream comparison is unfair: RVQ uses parallel prediction heads\nDiscrete pipeline (FastPitch → codec decoder) outperforms the classic continuous baseline"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#visualization",
-    "href": "magpie-tts-codecs/slides.html#visualization",
+    "objectID": "magpie-tts-codecs/handout.html#visualization",
+    "href": "magpie-tts-codecs/handout.html#visualization",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Visualization",
     "text": "Visualization\n\n\n\n\nGPT with multiple heads, 4 codebooks, sequence length n\nThe pattern decides how the 4 \\times n token grid is unrolled into decoding steps\nFlattening — all codebooks serialised → 4n steps, slowest but fully autoregressive\nParallel — emit a whole timestep at once → n steps, but codebooks are assumed independent\nCoarse First — a single model: codebook 1 is generated for the whole sequence first, then the remaining codebooks in parallel → 2n steps\n\nCoarse First \\neq VALL-E, which realises the same coarse-to-fine idea with two models — AR for codebook 1 + NAR for the rest, in n + (4 - 1) steps\n\nDelay — keeps RVQ’s dependency (codebook i conditioned on i-1) by offsetting codebook i by i-1 steps\n\neach step is predicted sequentially in the codebook dimension and in time, producing the diagonal stripes\na single model, n + (4 - 1) steps"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#other-patterns",
-    "href": "magpie-tts-codecs/slides.html#other-patterns",
+    "objectID": "magpie-tts-codecs/handout.html#other-patterns",
+    "href": "magpie-tts-codecs/handout.html#other-patterns",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Other Patterns",
     "text": "Other Patterns\n\n\n\n\n\n\nPartial Flattening — a reorganised Coarse First pattern: after the first codebook, all remaining codebooks are predicted in the next single step\nPartial Delay — Delay + Parallel patterns: after the first codebook, the rest are predicted in parallel (Moshi)\n\n\nExcept for the Parallel pattern, the model input at time t is not the audio representation at (t-1) — it is simply the sum of the previous predictions at t-1, according to the pattern. For the Delay pattern:\nX_{t+1} = \\text{emb}_1\\big(q_{t,\\,1}\\big) + \\text{emb}_2\\big(q_{t-1,\\,2}\\big) + \\dots + \\text{emb}_K\\big(q_{t-K+1,\\,K}\\big)\nWhether head k is active at time t also depends on the pattern — inactive heads contribute a special token instead of a prediction."
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#pattern-comparison",
-    "href": "magpie-tts-codecs/slides.html#pattern-comparison",
+    "objectID": "magpie-tts-codecs/handout.html#pattern-comparison",
+    "href": "magpie-tts-codecs/handout.html#pattern-comparison",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Pattern Comparison",
     "text": "Pattern Comparison\n\n\n\n\n\n\nText-conditioned music generation, audio tokenized with EnCodec\nObjective metrics:\n\nFAD ↓ — Fréchet Audio Distance between real and generated audio embeddings\nKL ↓ — divergence between the label distributions an AudioSet classifier assigns to the real and the generated audio\nCLAP ↑ — agreement score from a CLIP-like audio–text model between the description and the generated music\n\nSubjective metrics — human-rated on a 0–100 scale:\n\nOVL ↑ — overall perceptual quality\nREL ↑ — relevance of the generated audio to the description"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#overview",
-    "href": "magpie-tts-codecs/slides.html#overview",
+    "objectID": "magpie-tts-codecs/handout.html#overview",
+    "href": "magpie-tts-codecs/handout.html#overview",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Overview",
     "text": "Overview\n\nBy default, text↔︎audio alignment is learned implicitly by the attention (cross-attention) module\nThis allows training without any alignment information, but the learned alignment is unconstrained and may not be strictly monotonic\nNon-monotonicity causes various errors — word skipping, repetition, even infinite silence — making models unreliable for production\nThe issue becomes more visible on complex inputs (e.g. repeated words)\nDefaults: Pretrained Encoder-Decoder T5-TTS model with the Spectral Codec, 1.8k hours of English\nTrained on triples — (text to generate, audio prompt, audio to generate); unlike other approaches, the transcript of the audio prompt is not used\nPaper contributions:\n\nAlignment techniques that guide cross-attention towards monotonic alignment\nA comparison between FSQ with parallel generation and RVQ with a delay pattern"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#alignment-learning",
-    "href": "magpie-tts-codecs/slides.html#alignment-learning",
+    "objectID": "magpie-tts-codecs/handout.html#alignment-learning",
+    "href": "magpie-tts-codecs/handout.html#alignment-learning",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Alignment Learning",
     "text": "Alignment Learning\n\n\n\n\nDuring early training, cross-attention is multiplied by a static 2D beta-binomial prior\nThe prior is a matrix with cigar-shaped diagonal values, given by the beta-binomial PMF:\nf_B(k;\\, n, \\alpha, \\beta) = \\binom{n}{k} \\frac{B(k + \\alpha,\\; n - k + \\beta)}{B(\\alpha, \\beta)}\nIt is evaluated as P_{k,t} = f_B\\big(k;\\, N,\\; \\omega t,\\; \\omega (T - t + 1)\\big), where \\omega is a width factor, k the text token index, t the audio token index, N the text length and T the audio length\nSchedule: for the first S_1 steps simply multiply cross-attention by the prior, then over the next S_2 steps anneal it towards a matrix of all ones\nObservation: the CTC loss formulation allows all possible monotonic alignments to be considered\nGiven that the audio token sequence is longer than the text token sequence, the CTC loss can be computed on all cross-attention matrices → penalising the model for non-monotonic attention\n\\mathcal{L}_{\\text{align}} = \\text{CTCLoss}\\big(\\log A,\\; y\\big), \\qquad A \\in \\mathbb{R}^{T \\times N}\nwhere A is the cross-attention matrix (audio steps \\times text tokens) treated as per-step emission probabilities, and y is the text transcript"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#cross-attention-visualized",
-    "href": "magpie-tts-codecs/slides.html#cross-attention-visualized",
+    "objectID": "magpie-tts-codecs/handout.html#cross-attention-visualized",
+    "href": "magpie-tts-codecs/handout.html#cross-attention-visualized",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Cross-Attention Visualized",
     "text": "Cross-Attention Visualized\n\n\nQuestion timesteps are the text to generate, answer timesteps are the audio token sequence\nThe prior alone visually sharpens the alignment, but it is not enough — only adding the CTC loss makes it strictly monotonic"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#ablations",
-    "href": "magpie-tts-codecs/slides.html#ablations",
+    "objectID": "magpie-tts-codecs/handout.html#ablations",
+    "href": "magpie-tts-codecs/handout.html#ablations",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Ablations",
     "text": "Ablations\n\n\n\n\n\n\nAuthors experimented with where to place the audio prompt: encoder or decoder\nThere is no version with \\mathcal{L}_{align} (CTC loss) but without the prior — results were unintelligible, even though the attention was monotonic\n\n\n\n\n\n\n\nAs we will see later, even though DAC has the best reconstruction, it does not perform well downstream"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#evaluation",
-    "href": "magpie-tts-codecs/slides.html#evaluation",
+    "objectID": "magpie-tts-codecs/handout.html#evaluation",
+    "href": "magpie-tts-codecs/handout.html#evaluation",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Evaluation",
     "text": "Evaluation\n\n\n\n\n\n\nFor the baselines the authors took pretrained models with official checkpoints\nWER evaluation — 100 challenging texts and 2 seen speakers (male and female)\nMOS evaluation — 100 sentences from the Harvard Sentences, each audio rated by at least 10 listeners → 2 k evaluations per model"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#low-frame-rate-codec-outline",
-    "href": "magpie-tts-codecs/slides.html#low-frame-rate-codec-outline",
+    "objectID": "magpie-tts-codecs/handout.html#low-frame-rate-codec-outline",
+    "href": "magpie-tts-codecs/handout.html#low-frame-rate-codec-outline",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Low Frame Rate Codec — Outline",
     "text": "Low Frame Rate Codec — Outline\n\nReused from the Spectral Codec:\n\nFSQ quantization with 8 parallel codebooks\nHiFi-GAN waveform decoder\nRetains the same adversarial discriminators\n\nKey modifications:\n\nFrame rate cut to 21.5 fps (vs. 86.1 fps in the Spectral Codec) → far fewer tokens per second\nTwo-stage training: first trained without quantization, then fine-tuned with quantization\nLarger FSQ codebooks: 2016 levels ([8, 7, 6, 6]) per codebook vs. 1000 ([8, 5, 5, 5]) in the Spectral Codec\nConsumes raw audio directly instead of mel spectrograms\nAdds a convolutional WavLM-based discriminator\nOperates at 22.05 kHz\n\n\n\nLSFC Encoder: HiFi-GAN MRF blocks with dilation rate 1, each followed by a strided 1D conv for downsampling → strides mirror the decoder’s upsampling"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#low-frame-rate-codec-reconstruction",
-    "href": "magpie-tts-codecs/slides.html#low-frame-rate-codec-reconstruction",
+    "objectID": "magpie-tts-codecs/handout.html#low-frame-rate-codec-reconstruction",
+    "href": "magpie-tts-codecs/handout.html#low-frame-rate-codec-reconstruction",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Low Frame Rate Codec — Reconstruction",
     "text": "Low Frame Rate Codec — Reconstruction\n\n\n\n\n\n\nFor reference-based metrics, the reference is resampled to each codec’s own sample rate\nDAC is strong, but only at its full bitrate\nThe Spectral Codec has very poor SI-SDR yet good Mel distance — consistent with the earlier observation that spectral and waveform codecs each excel in their own domain"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#low-frame-rate-codec-ablations",
-    "href": "magpie-tts-codecs/slides.html#low-frame-rate-codec-ablations",
+    "objectID": "magpie-tts-codecs/handout.html#low-frame-rate-codec-ablations",
+    "href": "magpie-tts-codecs/handout.html#low-frame-rate-codec-ablations",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Low Frame Rate Codec — Ablations",
     "text": "Low Frame Rate Codec — Ablations\n\n\n\n\n\n\nScaling FSQ from 1000 to 2016 levels helps, but scaling further gives diminishing returns\nThe WavLM discriminator improves intelligibility"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#low-frame-rate-codec-tts-results",
-    "href": "magpie-tts-codecs/slides.html#low-frame-rate-codec-tts-results",
+    "objectID": "magpie-tts-codecs/handout.html#low-frame-rate-codec-tts-results",
+    "href": "magpie-tts-codecs/handout.html#low-frame-rate-codec-tts-results",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Low Frame Rate Codec — TTS Results",
     "text": "Low Frame Rate Codec — TTS Results\n\n\n\n\n\n\nEncoder–decoder T5-TTS trained on 1.8 k hours of English\nRVQ uses a delay pattern; the Spectral Codec and LFSC are predicted in parallel\nMuch better than the baselines, and also beats the 4032-level FSQ variant\n\n\nReconstruction quality is not fully aligned with TTS quality\n\nFSQ 4032 reconstructs well but performs worse downstream\nThe strongest DAC model is only good at reconstruction — it was never optimized for TTS"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#nano-codec-outline",
-    "href": "magpie-tts-codecs/slides.html#nano-codec-outline",
+    "objectID": "magpie-tts-codecs/handout.html#nano-codec-outline",
+    "href": "magpie-tts-codecs/handout.html#nano-codec-outline",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Nano Codec — Outline",
     "text": "Nano Codec — Outline\n\nBuilds upon the LFSC with a few modifications\n\nSnake activation instead of LeakyReLU\nDifferent dilation rates in the encoder\nExperiments with causality in the encoder and decoder by switching to causal convolutions\nReplaces the complex MS-STFT discriminator with a multi-band MS-STFT discriminator\nAdds a speaker consistency loss — maximise the cosine similarity between speaker embeddings of the real and reconstructed audio:\n\\mathcal{L}_{SC} = -\\frac{\\alpha}{N} \\sum_{n=1}^{N} \\cos\\left(\\phi(x_n),\\; \\phi(\\hat{x}_n)\\right) = -\\frac{\\alpha}{N} \\sum_{n=1}^{N} \\frac{\\phi(x_n) \\cdot \\phi(\\hat{x}_n)}{\\lVert \\phi(x_n) \\rVert_2 \\, \\lVert \\phi(\\hat{x}_n) \\rVert_2}\nwhere \\phi is a pretrained speaker verification encoder and \\hat{x}_n = G(x_n)"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#nano-codec-ablations",
-    "href": "magpie-tts-codecs/slides.html#nano-codec-ablations",
+    "objectID": "magpie-tts-codecs/handout.html#nano-codec-ablations",
+    "href": "magpie-tts-codecs/handout.html#nano-codec-ablations",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Nano Codec — Ablations",
     "text": "Nano Codec — Ablations\n\n\n\n\n\n\nThe fully causal model gives the worst results, the fully non-causal one the best\nThe partially causal model is a good trade-off and better suited to downstream TTS — the only version used from then on\n6.25 fps performs poorly; between 12.5 and 25 fps the authors keep 12.5 fps, since it is comparable on CER, SECS and SQMOS\nBitrate reduction (smaller codebooks) is strongly correlated with worse CER and SECS\nFinally, 12.5 fps with more FSQ layers vs 21.5 fps with fewer layers turn out comparable on all metrics"
   },
   {
-    "objectID": "magpie-tts-codecs/slides.html#nano-codec-zero-shot-tts-results",
-    "href": "magpie-tts-codecs/slides.html#nano-codec-zero-shot-tts-results",
+    "objectID": "magpie-tts-codecs/handout.html#nano-codec-zero-shot-tts-results",
+    "href": "magpie-tts-codecs/handout.html#nano-codec-zero-shot-tts-results",
     "title": "Magpie TTS – Codecs Evolution",
     "section": "Nano Codec — Zero-Shot TTS Results",
     "text": "Nano Codec — Zero-Shot TTS Results\n\n\n\n\n\n\nKoel-TTS — encoder–decoder TTS similar to T5, trained with CFG but without DPO (RL); a separate model is trained per codec on 18 k hours of English\nResults are better or comparable to the LFSC with a much smaller latency (TTFA)\nVisible speaker similarity gap between 12.5 and 21.5 fps — interesting observation that at a lower frame rate the prompt is shorter, which itself hurts speaker similarity"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#vq-recap-quantized-vae",
+    "href": "fsq-llasa-inworld/handout.html#vq-recap-quantized-vae",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "VQ Recap — Quantized VAE",
+    "text": "VQ Recap — Quantized VAE\n\nVAE with a quantization bottleneck: encoder \\rightarrow continuous latent z_e \\rightarrow quantize \\rightarrow decoder\nQuantization: map z_e to the nearest codebook entry (argmin / nearest-neighbor)\n\n\n\nz_q = e_k, \\quad k = \\arg\\min_j \\| z_e - e_j \\|_2\n\n\n\nCodebook \\mathcal{C} = \\{e_k\\}_{k=1}^{K} is a learnable embedding table\nArgmin is not differentiable — use STE: copy gradients from decoder input straight to encoder output\nVAE formulation holds exactly, but KL term is constant — we use a deterministic policy (argmin), not sampling\nTraining uses reconstruction, codebook, and commitment losses (sometimes EMA instead of codebook loss) — needed to make VQ-VAE learn and stabilize training"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#rvq-residual-vector-quantization",
+    "href": "fsq-llasa-inworld/handout.html#rvq-residual-vector-quantization",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "RVQ — Residual Vector Quantization",
+    "text": "RVQ — Residual Vector Quantization\n\nWhat if one codebook is not enough? — single VQ reconstruction is lossy, the quantization error can be significant\nNaive fix: just make the codebook larger — but this doesn’t scale; utilization drops sharply beyond \\sim 2^{11} entries (dead codes)\nBetter idea: quantize, compute the residual, quantize the residual, repeat\n\n\n\nr_0 = z_e, \\quad z_q^{(i)} = \\text{VQ}_i(r_{i-1}), \\quad r_i = r_{i-1} - z_q^{(i)}\n\n\n\nFinal representation: \\hat{z} = \\sum_{i=1}^{N} z_q^{(i)} — sum of N codebook lookups\nMuch more versatile than single-codebook VQ"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#vq-rvq-common-issues",
+    "href": "fsq-llasa-inworld/handout.html#vq-rvq-common-issues",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "VQ & RVQ — Common Issues",
+    "text": "VQ & RVQ — Common Issues\n\nA frame is a vector of codebook indices: \\mathbf{c} = [c_1, c_2, \\dots, c_N]\nBut c_i depends on the residual from steps 1, \\dots, i{-}1\n\n\n\nc_i = f\\bigl(r_{i-1}\\bigr) = f\\bigl(z_e - \\textstyle\\sum_{j=1}^{i-1} e_{c_j}\\bigr)\n\n\n\nCodebooks are not independent — the i-th code is meaningless without knowing all previous codes\nCannot predict the whole frame \\mathbf{c} = [c_1, \\dots, c_N] at once — ideally need to predict each c_i autoregressively, conditioned on c_1, \\dots, c_{i-1}\nDead codes: some codebook entries are never selected — requires tracking utilization and reinitialization strategies\nTraining can be unstable — balancing reconstruction, commitment, and codebook losses is fragile (applies to both VQ and RVQ)\nMotivates alternatives like FSQ that avoid these issues entirely"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#fsq-finite-scalar-quantization-overview",
+    "href": "fsq-llasa-inworld/handout.html#fsq-finite-scalar-quantization-overview",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "FSQ — Finite Scalar Quantization Overview",
+    "text": "FSQ — Finite Scalar Quantization Overview\n\nDrop-in replacement for VQ and RVQ (in theory)\nNo additional losses — no commitment loss, no codebook loss, no EMA\nNo learned embedding tables — the codebook is implicit, directly quantize the encoder’s latent space\nStill uses STE to pass gradients through to the encoder\nAchieves very high utilization even for much larger codebooks: \\sim 2^{10} in VQ vs \\sim 2^{16} in FSQ"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#fsq-a-new-quantization-paradigm",
+    "href": "fsq-llasa-inworld/handout.html#fsq-a-new-quantization-paradigm",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "FSQ — A New Quantization Paradigm",
+    "text": "FSQ — A New Quantization Paradigm\n\nUnlike VQ where d \\geq 512, FSQ uses a very small encoder output: d &lt; 10, so z_e \\in \\mathbb{R}^d\nEach dimension is bounded to L_i discrete levels via rounding:\n\n\n\n\\hat{z}_i = \\left\\lfloor \\frac{L_i - 1}{2} \\cdot \\tanh(z_i) \\right\\rceil\n\n\n\nExample: d = 3, L = 3 \\Rightarrow each dimension in \\{-1, 0, 1\\} \\Rightarrow implicit codebook of size L^d = 3^3 = 27\nWe can enumerate all possible vectors — the codebook is the full Cartesian product: \\mathcal{C} = \\{1, 2, \\dots, L^d\\}\nIn general L_i can differ per dimension — codebook size is \\prod_{i=1}^{d} L_i"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#vq-vs-fsq-intuition",
+    "href": "fsq-llasa-inworld/handout.html#vq-vs-fsq-intuition",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "VQ vs FSQ — Intuition",
+    "text": "VQ vs FSQ — Intuition\n\nVQ is potentially more expressive — it learns where to place each code vector freely in the latent space via separate embedding vectors\nFSQ is more constrained — the latent space is bounded, and the encoder must fit its representation into a fixed grid\nThis difference is mostly theoretical — both models are highly nonlinear, and with powerful enough encoders the expressiveness gap shrinks"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#fsq-vs-vq-evaluation",
+    "href": "fsq-llasa-inworld/handout.html#fsq-vs-vq-evaluation",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "FSQ vs VQ — Evaluation",
+    "text": "FSQ vs VQ — Evaluation\n\nTrain VQ and FSQ on images, then generate images with MaskGIT (class-conditional BERT, predicts codes)\nReconstruction FID: Fréchet Inception Distance between real images and their reconstructions\nSampling FID: FID of images generated by MaskGIT using the learned codes\nCodebook usage: fraction of codewords used at least once\nCompression cost: how hard is it for the model to use this encoding — is codeword usage close to uniform?"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#llasa-overview",
+    "href": "fsq-llasa-inworld/handout.html#llasa-overview",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "LLaSA — Overview",
+    "text": "LLaSA — Overview\n\nMany zero-shot voice cloning approaches invent custom architectures / pipelines to improve quality\nLLaSA: first attempt to use a traditional LLM approach for speech — decoder-only model + audio tokenizer\nMade possible by FSQ: no need to change the LLM at all, just next-token prediction\nInstead of studying architecture choices, they invest in understanding scaling principles: scale compute during training or during inference\nOne of the first papers to measure how scaling inference compute can significantly improve output quality"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#llasa-design",
+    "href": "fsq-llasa-inworld/handout.html#llasa-design",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "LLaSA — Design",
+    "text": "LLaSA — Design\n\nBackbones: LLaMA 3.2 (1B, 3B) and LLaMA 3.1 (8B) with extended vocabulary\nLLM trained on quadruples: (prompt text, text to generate, audio prompt, audio to generate) — loss computed only on audio tokens\nTarget languages: English and Chinese (bilingual)\nDataset sizes: 80k, 160k, 250k hours\nXCodec2: replaces RVQ with FSQ; decoder follows Vocos — transformer predicting STFT magnitude & phase + iSTFT to generate audio\nAudio tokenizer trained on 150k hours (MLS + Emilia), 16 kHz, codebook size 65k, covering 10 languages (Asian and European)"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#xcodec2-results",
+    "href": "fsq-llasa-inworld/handout.html#xcodec2-results",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "XCodec2 — Results",
+    "text": "XCodec2 — Results\n\n\n\n\nEncodec: 8 codebooks, 75 Hz frame rate, bitrate = \\log_2(1024) \\times 8 \\times 75 = 6 kbps\nDAC: 8 codebooks × 50 Hz, bitrate = \\log_2(1024) \\times 12 \\times 50 = 6 kbps\nXCodec2: single codebook → 0.8 kbps; BigCodec → 1.04 kbps\nModels with very low kbps achieve UTMOS scores higher than ground truth — the decoder acts as a generator, not just a reconstructor\nHowever, PESQ and speaker similarity (SIM) are usually lower at low bitrates compared to high-bitrate models"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#llasa-training-scaling",
+    "href": "fsq-llasa-inworld/handout.html#llasa-training-scaling",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "LLaSA — Training Scaling",
+    "text": "LLaSA — Training Scaling\nEvaluation protocol borrowed from BASE TTS:\n\n\n\n\n\n\n\n\n\n\n\nCategory\n\n\nExample\n\n\n1 (Bad)\n\n\n2 (Ok)\n\n\n3 (Good)\n\n\n\n\n\n\nCompound Nouns\n\n\n“stone-built quaint countryside holiday cottage”\n\n\nFails to recognise\n\n\nUnnatural stress\n\n\nNatural phrasal stress\n\n\n\n\nEmotions\n\n\n“Oh my gosh! Are we really going to the Maldives?”\n\n\nNo audible emotion\n\n\nPresent but insufficient\n\n\nCorrect recognition\n\n\n\n\nForeign Words\n\n\n“mise en place … pièce de résistance”\n\n\nIncorrect pronunciation\n\n\nForeign accent, not quite right\n\n\nCorrect rendering\n\n\n\n\nParalinguistics\n\n\n“Shh, Lucy, shhh, we mustn’t wake…”\n\n\nNo recognition\n\n\nDistinct but unnatural\n\n\nNatural rendering\n\n\n\n\nPunctuations\n\n\n“Emergency @ home; call ASAP! … #familymatters”\n\n\nGlitches on # or &\n\n\nNo glitch, incorrect\n\n\nCorrect pausing\n\n\n\n\nQuestions\n\n\n“will the ministers find the answers in time?”\n\n\nWrong intonation\n\n\nLargely correct\n\n\nCorrect intonation\n\n\n\n\nSyntactic\n\n\n“The movie that De Moya … was a box-office hit”\n\n\nFails to parse\n\n\nParses but unnatural\n\n\nCorrect & natural\n\n\n\n\n\n\n\n\n\nForeign words, compound nouns → data; Punctuation, syntactic complexity → model size; Emotions, paralinguistics → both\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nBASE TTS: trained from scratch; Small 150M + 1k hrs, Base 400M + 10k hrs, Large 1B + 100k hrs"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#llasa-inference-scaling",
+    "href": "fsq-llasa-inworld/handout.html#llasa-inference-scaling",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "LLaSA — Inference Scaling",
+    "text": "LLaSA — Inference Scaling\n\nInference compute scaling — three strategies:\n\n\nPRM (Process Reward Model): beam search during generation — M beams × N candidates, generate ~0.5s chunks, keep top M, continue\nORM (Output Reward Model): generate M \\times N candidates (to match beam search budget), select best by reward (SIM, WER)\nPartial PRM: use PRM for first ~2 seconds, then switch to ORM for the remainder (generate rest, choose best)"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#llasa-final-results",
+    "href": "fsq-llasa-inworld/handout.html#llasa-final-results",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "LLaSA — Final Results",
+    "text": "LLaSA — Final Results\n\n\n\n\nUsing inference scaling is not a fair comparison against baselines (they don’t use it)\nBut it demonstrates how we can push quality further at the cost of extra compute"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#inworld-llasa-maxing",
+    "href": "fsq-llasa-inworld/handout.html#inworld-llasa-maxing",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — LLaSA Maxing",
+    "text": "Inworld — LLaSA Maxing\n\nExtends the LLaSA idea (pure LLM machinery) with full training pipeline: pretraining (1M hours), SFT (200k hours), and reinforcement learning\nTwo variants: Small (LLaMA 3.2 Instruct 1B) and Large (LLaMA 3.1 3B)\nXCodec2 at 16 kHz + a super-resolution component to generate 48 kHz output\nSpeech Markup Language: control speaking styles and non-verbals via tags, with LoRA fine-tuning\nStreaming audio generation \\neq streaming TTS — model needs to see full text first, then generates audio in streaming mode\nArchitecture is untouched — same decoder-only LLM + tokenizer"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#inworld-audio-tokenizer",
+    "href": "fsq-llasa-inworld/handout.html#inworld-audio-tokenizer",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — Audio Tokenizer",
+    "text": "Inworld — Audio Tokenizer\n\nArchitecture follows XCodec2 — input is always 16 kHz audio\n50 tokens/s, codebook size 65k — same as XCodec2, trained on 110k hours\nDifferent decoders for different target sample rates: 16 kHz, 24 kHz, and 48 kHz\n16 kHz and 24 kHz decoders are identical — only difference is iSTFT hop size (320 vs 480); trained independently\nFor 48 kHz: add 1D transposed ResNet blocks for upsampling\n\nFirst train on audios with estimated bandwidth \\geq 32 kHz\nFine-tune only on audios with estimated bandwidth \\geq 44.1 kHz\n\nAll models use an additional RMS volume loss — without it, streaming audio generation can produce volume jumps"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#inworld-pretraining",
+    "href": "fsq-llasa-inworld/handout.html#inworld-pretraining",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — Pretraining",
+    "text": "Inworld — Pretraining\n\nAudio without transcripts, fixed duration 40s segments — start/end marked with special tokens\nAlso used 20B text tokens (instruction data) — without it, model degrades text understanding\nFixed batch sizes → used torch.compile to speed up training\n32 H100 GPUs: Small pretrain took 2 days, Large took 10 days\nEvaluation: 5k utterances across languages, continuation task — 10s utterances, first half as prompt, measure speaker similarity"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#inworld-sft",
+    "href": "fsq-llasa-inworld/handout.html#inworld-sft",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — SFT",
+    "text": "Inworld — SFT\n\nData preparation — DNSMOS + language-specific CPS (chars/sec) filtering:\n\nFilter out bottom 20% by DNSMOS\nRemove 5% outliers (each end) for CPS per language\nFilter out pairs with low-quality transcriptions (excess punctuation, non-speech content)\n\nTrain NTP on audio tokens: &lt;|begin_of_text|&gt; x_1, \\dots, x_T &lt;|speech_start|&gt; y_1, \\dots, y_S &lt;|speech_end|&gt;\nVariable-length sequences → torch.compile unavailable — ~3× slowdown vs pretraining\nExperimented with SFT on pretrained and non-pretrained (text-base initialization) models\nTried instruction following during SFT but it failed — appears unsupported (dead code remains)"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#inworld-reinforcement-learning",
+    "href": "fsq-llasa-inworld/handout.html#inworld-reinforcement-learning",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — Reinforcement Learning",
+    "text": "Inworld — Reinforcement Learning\n\nGRPO: sample several audio completions for the same prompt, reinforce outputs scoring above group average, suppress those below\nRewards computed on decoded 48 kHz waveform: Whisper WER, WavLM speaker similarity, DNSMOS quality\nClipped updates + KL penalty keep RL model close to SFT checkpoint — reduces reward-driven degeneration\nTrained 3 specialized TTS models (each optimizing one reward) and 1 unified TTS model (all three rewards) — to check if joint optimization loses quality"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#inworld-audio-markups",
+    "href": "fsq-llasa-inworld/handout.html#inworld-audio-markups",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — Audio Markups",
+    "text": "Inworld — Audio Markups\n\nTags control style and non-verbals: [angry], [whispering], [laugh], [sigh]\nAdding style tags during normal SFT failed — model often ignored them\nCodec tokens mix speaker identity, style, prosody, and content\nTrain on same-speaker neutral + styled recordings joined by silence\nSeparate LoRA stage learns markup control on ~180 hours of English data, likely after RL\nTag embeddings may remain poorly learned — LoRA updates model layers, not the embedding table\nStyle control transfers to other languages despite English-only markup training\nCombining tags creates meaningful new styles not seen during training\nSpeaker embeddings may help separate speaker and style, but style can still leak into them\nPaper and code do not fully match; some users report tags being spoken aloud; no evidence in code that style tags are actual tags\nIn general, evaluation of style control is very difficult — no standard metrics or benchmarks"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#inworld-evaluation",
+    "href": "fsq-llasa-inworld/handout.html#inworld-evaluation",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "Inworld — Evaluation",
+    "text": "Inworld — Evaluation\n\n\n\n\n\n\n\n\n\n\n\nWER (English only) across different text lengths — compared full pipeline (pretrain + SFT + RL) vs SFT only\nGenerated 100 sentences for 11 supported languages, synthesized with same speakers (Small and Large)\nInternal arena: 20 human voters, 400 evaluations total\nWorkflow for best quality: use LoRA to fine-tune on a single speaker instead of zero-shot"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#references",
+    "href": "fsq-llasa-inworld/handout.html#references",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "References",
+    "text": "References\n\nMentzer et al., “Finite Scalar Quantization: VQ-VAE Made Simple” (ICLR 2024)\nLLaSA paper and XCodec2\nInworld AI documentation"
+  },
+  {
+    "objectID": "fsq-llasa-inworld/handout.html#section",
+    "href": "fsq-llasa-inworld/handout.html#section",
+    "title": "FSQ, LLaSA & Inworld TTS",
+    "section": "",
+    "text": "Thank you!\nQuestions?"
   },
   {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Presentations",
     "section": "",
-    "text": "FSQ, LLaSA & Inworld TTS\nMagpie TTS Codecs"
+    "text": "Talk\nSlides\nHandout\n\n\n\n\nFSQ, LLaSA & Inworld TTS\nanimated\nall steps shown\n\n\nMagpie TTS Codecs\nanimated\nall steps shown"
   },
   {
     "objectID": "index.html#talks",
     "href": "index.html#talks",
     "title": "Presentations",
     "section": "",
-    "text": "FSQ, LLaSA & Inworld TTS\nMagpie TTS Codecs"
+    "text": "Talk\nSlides\nHandout\n\n\n\n\nFSQ, LLaSA & Inworld TTS\nanimated\nall steps shown\n\n\nMagpie TTS Codecs\nanimated\nall steps shown"
   },
   {
     "objectID": "WORKFLOW.html",
     "href": "WORKFLOW.html",
     "title": "Workflow Cheatsheet",
     "section": "",
-    "text": "cd ~/Projects/Presentations\nquarto preview                    # live-reloads in browser\nquarto preview fsq-llasa-inworld/slides.qmd   # preview single deck\n\n\n\n\nCreate a new folder with slides.qmd and images/:\nmkdir -p new-talk/images\nAdd YAML front matter in new-talk/slides.qmd:\n---\ntitle: \"Talk Title\"\nauthor: \"Stanvla\"\nformat:\n  revealjs:\n    theme: simple\n    slide-number: true\n    width: 1920\n    height: 1080\n---\nAdd a link in index.qmd:\n- [Talk Title](new-talk/slides.qmd)\n\n\n\n\n\nPut images in &lt;deck&gt;/images/ next to slides.qmd\nUse relative paths only:\n![](images/diagram.png)\n![Caption](images/arch.png){width=\"60%\"}\nGIFs animate automatically\n\n\n\n\ngit add .\ngit commit -m \"describe change\"\ngit push origin main              # backup source to main branch\nquarto publish gh-pages           # renders site → pushes to gh-pages branch\nQuarto handles everything: renders all decks, copies images, pushes the built site to the gh-pages branch. GitHub serves it automatically.\nYour site lives at: https://stanvla.github.io/speech-presentations/ Each deck at: https://stanvla.github.io/speech-presentations/fsq-llasa-inworld/slides.html\n\n\n\nAdd embed-resources: true under format: revealjs: in a deck’s front matter. Then:\nquarto render fsq-llasa-inworld/slides.qmd\nThe resulting slides.html is fully self-contained (images base64-embedded). AirDrop it anywhere.\n\n\n\nquarto render fsq-llasa-inworld/slides.qmd --profile handout\nUses _quarto-handout.yml to disable incremental/chalkboard.\n\n\n\nOption A — built-in print (no extra tools):\n# Open the deck in browser, then append ?print-pdf to the URL:\n# http://localhost:4848/fsq-llasa-inworld/slides.html?print-pdf\n# Then Ctrl/Cmd+P → Save as PDF (set margins to None, enable Background graphics)\nOption B — automated via decktape (needs Node.js):\nnpm install -g decktape\nquarto render fsq-llasa-inworld/slides.qmd\ndecktape reveal fsq-llasa-inworld/slides.html fsq-llasa-inworld/slides.pdf\nOption C — render directly to PDF format (beamer, not revealjs):\nquarto render fsq-llasa-inworld/slides.qmd --to pdf\nThis produces a Beamer PDF (LaTeX-based, different layout from slides). Requires a TeX installation (quarto install tinytex).\n\n\n\n\nNever use absolute paths for images (/Users/... or /images/... breaks on Pages)\nDon’t commit build artifacts — _site/, slides_files/, .quarto/ are gitignored\nOne quarto publish gh-pages deploys everything (all decks, landing page, images)"
+    "text": "cd ~/Projects/Presentations\nquarto preview                    # live-reloads in browser\nquarto preview fsq-llasa-inworld/slides.qmd   # preview single deck\n\n\n\n\nCreate a new folder with slides.qmd and images/:\nmkdir -p new-talk/images\nAdd YAML front matter in new-talk/slides.qmd:\n---\ntitle: \"Talk Title\"\nauthor: \"Stanvla\"\nformat:\n  revealjs:\n    theme: simple\n    slide-number: true\n    width: 1920\n    height: 1080\n---\nAdd a link in index.qmd:\n- [Talk Title](new-talk/slides.qmd)\n\n\n\n\n\nPut images in &lt;deck&gt;/images/ next to slides.qmd\nUse relative paths only:\n![](images/diagram.png)\n![Caption](images/arch.png){width=\"60%\"}\nGIFs animate automatically\n\n\n\n\ngit add .\ngit commit -m \"describe change\"\ngit push origin main              # backup source to main branch\nquarto publish gh-pages           # renders site → pushes to gh-pages branch\nQuarto handles everything: renders all decks, copies images, pushes the built site to the gh-pages branch. GitHub serves it automatically.\nYour site lives at: https://stanvla.github.io/speech-presentations/ Each deck at: https://stanvla.github.io/speech-presentations/fsq-llasa-inworld/slides.html\n\n\n\nAdd embed-resources: true under format: revealjs: in a deck’s front matter. Then:\nquarto render fsq-llasa-inworld/slides.qmd\nThe resulting slides.html is fully self-contained (images base64-embedded). AirDrop it anywhere.\n\n\n\nEach deck is split into three files:\nmagpie-tts-codecs/\n  _metadata.yml   # shared revealjs options (theme, size, pointer, ...)\n  _body.qmd       # all slide content, NO front matter\n  slides.qmd      # animated:  incremental: true,  chalkboard: true\n  handout.qmd     # static:    incremental: false, fragments: false\nBoth wrappers are just front matter plus {{&lt; include _body.qmd &gt;}}, so content is written once. Files starting with _ are ignored by project renders.\nA plain quarto render / quarto publish gh-pages builds both variants:\n_site/magpie-tts-codecs/slides.html    # animated\n_site/magpie-tts-codecs/handout.html   # everything visible at once\nfragments: false is what neutralises hardcoded .fragment classes (boxes, mid-slide images); incremental: false alone only affects bullet lists.\n\n\n\nOption A — built-in print (no extra tools):\n# Open the deck in browser, then append ?print-pdf to the URL:\n# http://localhost:4848/fsq-llasa-inworld/slides.html?print-pdf\n# Then Ctrl/Cmd+P → Save as PDF (set margins to None, enable Background graphics)\nOption B — automated via decktape (needs Node.js):\nnpm install -g decktape\nquarto render fsq-llasa-inworld/slides.qmd\ndecktape reveal fsq-llasa-inworld/slides.html fsq-llasa-inworld/slides.pdf\nOption C — render directly to PDF format (beamer, not revealjs):\nquarto render fsq-llasa-inworld/slides.qmd --to pdf\nThis produces a Beamer PDF (LaTeX-based, different layout from slides). Requires a TeX installation (quarto install tinytex).\n\n\n\n\nNever use absolute paths for images (/Users/... or /images/... breaks on Pages)\nDon’t commit build artifacts — _site/, slides_files/, .quarto/ are gitignored\nOne quarto publish gh-pages deploys everything (all decks, landing page, images)"
   },
   {
     "objectID": "WORKFLOW.html#day-to-day-edit-preview-locally",
@@ -221,7 +375,7 @@
     "href": "WORKFLOW.html#handout-mode-no-animations",
     "title": "Workflow Cheatsheet",
     "section": "",
-    "text": "quarto render fsq-llasa-inworld/slides.qmd --profile handout\nUses _quarto-handout.yml to disable incremental/chalkboard."
+    "text": "Each deck is split into three files:\nmagpie-tts-codecs/\n  _metadata.yml   # shared revealjs options (theme, size, pointer, ...)\n  _body.qmd       # all slide content, NO front matter\n  slides.qmd      # animated:  incremental: true,  chalkboard: true\n  handout.qmd     # static:    incremental: false, fragments: false\nBoth wrappers are just front matter plus {{&lt; include _body.qmd &gt;}}, so content is written once. Files starting with _ are ignored by project renders.\nA plain quarto render / quarto publish gh-pages builds both variants:\n_site/magpie-tts-codecs/slides.html    # animated\n_site/magpie-tts-codecs/handout.html   # everything visible at once\nfragments: false is what neutralises hardcoded .fragment classes (boxes, mid-slide images); incremental: false alone only affects bullet lists."
   },
   {
     "objectID": "WORKFLOW.html#export-to-pdf",
@@ -390,5 +544,166 @@
     "title": "FSQ, LLaSA & Inworld TTS",
     "section": "",
     "text": "Thank you!\nQuestions?"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#magpie-tts-overview",
+    "href": "magpie-tts-codecs/slides.html#magpie-tts-overview",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Magpie TTS — Overview",
+    "text": "Magpie TTS — Overview\n\nNVIDIA’s state-of-the-art multilingual TTS system, built on the NeMo Speech framework\nNeural audio codec — NanoCodec — decodes those tokens into high-fidelity audio\n5 English speakers and 12 languages: Arabic, Chinese, English, French, German, Hindi, Italian, Japanese, Korean, Portuguese, Spanish, Vietnamese\nPredicts discrete codec tokens autoregressively with a transformer encoder–decoder\nInnovations and tricks:\n\nFrame stacking (factor 2) — two codec frames per decoder step\nLocal transformer — fine-grained refinement within a stacked frame\nAuxiliary CTC loss on the cross-attention matrix to enforce monotonic alignment\nAttention priors — a diagonal prior biases text↔︎audio cross-attention early in training\nClassifier-free guidance (CFG) — drop text and prompt in training, modify logits at inference\nGroup Relative Policy Optimization (GRPO) — RL post-training, group mean replaces the critic\n\nWeights and demo: nvidia/magpie_tts_multilingual_357m"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#multi-receptive-field-fusion-hifi-gan",
+    "href": "magpie-tts-codecs/slides.html#multi-receptive-field-fusion-hifi-gan",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Multi-Receptive Field Fusion (Hifi-GAN)",
+    "text": "Multi-Receptive Field Fusion (Hifi-GAN)\n\n\nMulti-Receptive Field Fusion: models patterns of various lengths — one dedicated residual block per “length”, returning the sum of all residual blocks\nResidual block i is specified by kernel size k_r[i] and dilation rates D_r[i]\nUpsample sizes k_u = (16, 16, 4, 4) — each k_u[i] upsampling layer is followed by its own MRF, and every such MRF contains the same |k_r| residual blocks\nResidual kernels k_r = (3, 7, 11) and dilation rates D_r = ((1,1), (3,1), (5,1)) \\times 3 — note that |k_r| = |D_r|\nE.g. n = 1 → k_r[n] = 7 and D_r[n] = ((1,1), (3,1), (5,1)); for each dilation tuple we perform 2 convolutions in a row"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#mrf-continued",
+    "href": "magpie-tts-codecs/slides.html#mrf-continued",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "MRF — Continued",
+    "text": "MRF — Continued\n\n\n\n\n\n\nfor i in range(self.num_upsamples):               # 4 stages, k_u = (16, 16, 4, 4)\n    x = self.transposed_convs[i](leaky_relu(x))   # T *= k_u[i] // 2\n    xs = 0                                        # ---------- MRF ----------\n    for n in range(self.num_kernels):             # k_r = (3, 7, 11) parallel branches\n        res = x                                   # residual block, kernel size k_r[n]\n        for c1, c2 in zip(self.convs1[i][n], self.convs2[i][n]):   # D_r = ((1,1), (3,1), (5,1)) × 3\n            h = c1(leaky_relu(res))               # dilation 1, 3, 5\n            h = c2(leaky_relu(h))                 # dilation 1\n            res = res + h                         # 2 convs in a row, then skip\n        xs = xs + res\n    x = xs / self.num_kernels                     # same shape as x\n\nAs the kernel grows, so does the receptive field of the i-th residual block.\nOnly transposed_convs[i] changes the shape.\nAll |k_r| branches receive the same x and are shape-preserving."
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#waveform-discriminators",
+    "href": "magpie-tts-codecs/slides.html#waveform-discriminators",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Waveform Discriminators",
+    "text": "Waveform Discriminators\n\n\n\n\n\n\nMulti-Scale Discriminator — different scale, i.e. receptive field: raw audio, ×2 avg-pooled, ×4 avg-pooled\nMulti-Period Discriminator — different periods, usually primes [2, 3, 5, 7, 11], so it can analyse different periodic patterns in the audio\nUsually all discriminators are paired with a feature matching loss:\n\\mathcal{L}_{FM}(G) = \\mathbb{E}_{(x, s)} \\left[ \\frac{1}{K} \\sum_{k=1}^{K} \\frac{1}{T_k} \\sum_{i=1}^{T_k} \\frac{1}{N_{k,i}} \\left\\lVert D_k^i(x) - D_k^i(G(s)) \\right\\rVert_1 \\right]\nwhere D_k^i are the layer-i features of discriminator k and N_{k,i} their element count"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#spectral-discriminator",
+    "href": "magpie-tts-codecs/slides.html#spectral-discriminator",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Spectral Discriminator",
+    "text": "Spectral Discriminator\n\n\n\n\n\n\nMulti-Scale STFT Discriminator — processes audio with STFTs of different window lengths [2048, 1024, 512, 256, 128], hop size derived from the window size\nPhases are also used (complex part) — bad phase makes the sound less crispy; complex values are just concatenated, not a second channel\nOther variations:\n\nMulti-Resolution Discriminator (MRD) — same STFT resolutions, but magnitude only, phase ignored\nMulti-Scale Mel Discriminator — better for human perception, ignores phase\nMultiple bands — adds another dimension, frequency bands, so each discriminator only looks at specific frequencies"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#spectral-codec-outline",
+    "href": "magpie-tts-codecs/slides.html#spectral-codec-outline",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Spectral Codec — Outline",
+    "text": "Spectral Codec — Outline\n\n\nOperates on mel spectrograms rather than raw waveforms; compares RVQ vs FSQ quantization\nEvaluates downstream TTS quality with both AR and NAR FastPitch variants\nAdopts group quantization (HiFi-Codec): partition the latent into groups, quantize each independently\n44.1 kHz HiFi-GAN vocoder as the waveform decoder\n86.1 tokens/s across 8 parallel codebooks (size 1 k each) → 6.9 kbps\nTraining losses: multi-resolution mel spectrogram + multi-resolution log-magnitude STFT\nAdversarial training: MPD + multi-scale complex STFT discriminator"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#spectral-codec-details",
+    "href": "magpie-tts-codecs/slides.html#spectral-codec-details",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Spectral Codec — Details",
+    "text": "Spectral Codec — Details\n\n\nSpectral Variant\n\nAsymmetric: mel spectrogram input → latent dim 32 (FSQ) or 128 (RVQ)\nFSQ: 8 parallel codebooks, each quantizing 4 dims into [8, 5, 5, 5] levels\nRVQ: 8 codebooks of size 1024\n\n\n\nWaveform Variant\n\nSymmetric: encoder mirrors the HiFi-GAN decoder\nFSQ and RVQ setups identical to the spectral variant\n\n\n\n\nDownstream TTS\n\nFastPitch (NAR): predicts mel spectrogram from text, pitch, and energy inputs\n8 parallel heads with softmax classification instead of L2 regression\nAR variant: adds causal attention and additional feed-forward layers"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#spectral-codec-results",
+    "href": "magpie-tts-codecs/slides.html#spectral-codec-results",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Spectral Codec — Results",
+    "text": "Spectral Codec — Results\n\n\nUpper bound: HiFi-GAN without quantization (oracle reconstruction)\nSpectral codecs excel on spectrogram-based metrics; waveform codecs on waveform-based\nRVQ vs FSQ downstream comparison is unfair: RVQ uses parallel prediction heads\nDiscrete pipeline (FastPitch → codec decoder) outperforms the classic continuous baseline"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#visualization",
+    "href": "magpie-tts-codecs/slides.html#visualization",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Visualization",
+    "text": "Visualization\n\n\n\n\nGPT with multiple heads, 4 codebooks, sequence length n\nThe pattern decides how the 4 \\times n token grid is unrolled into decoding steps\nFlattening — all codebooks serialised → 4n steps, slowest but fully autoregressive\nParallel — emit a whole timestep at once → n steps, but codebooks are assumed independent\nCoarse First — a single model: codebook 1 is generated for the whole sequence first, then the remaining codebooks in parallel → 2n steps\n\nCoarse First \\neq VALL-E, which realises the same coarse-to-fine idea with two models — AR for codebook 1 + NAR for the rest, in n + (4 - 1) steps\n\nDelay — keeps RVQ’s dependency (codebook i conditioned on i-1) by offsetting codebook i by i-1 steps\n\neach step is predicted sequentially in the codebook dimension and in time, producing the diagonal stripes\na single model, n + (4 - 1) steps"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#other-patterns",
+    "href": "magpie-tts-codecs/slides.html#other-patterns",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Other Patterns",
+    "text": "Other Patterns\n\n\n\n\n\n\nPartial Flattening — a reorganised Coarse First pattern: after the first codebook, all remaining codebooks are predicted in the next single step\nPartial Delay — Delay + Parallel patterns: after the first codebook, the rest are predicted in parallel (Moshi)\n\n\nExcept for the Parallel pattern, the model input at time t is not the audio representation at (t-1) — it is simply the sum of the previous predictions at t-1, according to the pattern. For the Delay pattern:\nX_{t+1} = \\text{emb}_1\\big(q_{t,\\,1}\\big) + \\text{emb}_2\\big(q_{t-1,\\,2}\\big) + \\dots + \\text{emb}_K\\big(q_{t-K+1,\\,K}\\big)\nWhether head k is active at time t also depends on the pattern — inactive heads contribute a special token instead of a prediction."
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#pattern-comparison",
+    "href": "magpie-tts-codecs/slides.html#pattern-comparison",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Pattern Comparison",
+    "text": "Pattern Comparison\n\n\n\n\n\n\nText-conditioned music generation, audio tokenized with EnCodec\nObjective metrics:\n\nFAD ↓ — Fréchet Audio Distance between real and generated audio embeddings\nKL ↓ — divergence between the label distributions an AudioSet classifier assigns to the real and the generated audio\nCLAP ↑ — agreement score from a CLIP-like audio–text model between the description and the generated music\n\nSubjective metrics — human-rated on a 0–100 scale:\n\nOVL ↑ — overall perceptual quality\nREL ↑ — relevance of the generated audio to the description"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#overview",
+    "href": "magpie-tts-codecs/slides.html#overview",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Overview",
+    "text": "Overview\n\nBy default, text↔︎audio alignment is learned implicitly by the attention (cross-attention) module\nThis allows training without any alignment information, but the learned alignment is unconstrained and may not be strictly monotonic\nNon-monotonicity causes various errors — word skipping, repetition, even infinite silence — making models unreliable for production\nThe issue becomes more visible on complex inputs (e.g. repeated words)\nDefaults: Pretrained Encoder-Decoder T5-TTS model with the Spectral Codec, 1.8k hours of English\nTrained on triples — (text to generate, audio prompt, audio to generate); unlike other approaches, the transcript of the audio prompt is not used\nPaper contributions:\n\nAlignment techniques that guide cross-attention towards monotonic alignment\nA comparison between FSQ with parallel generation and RVQ with a delay pattern"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#alignment-learning",
+    "href": "magpie-tts-codecs/slides.html#alignment-learning",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Alignment Learning",
+    "text": "Alignment Learning\n\n\n\n\nDuring early training, cross-attention is multiplied by a static 2D beta-binomial prior\nThe prior is a matrix with cigar-shaped diagonal values, given by the beta-binomial PMF:\nf_B(k;\\, n, \\alpha, \\beta) = \\binom{n}{k} \\frac{B(k + \\alpha,\\; n - k + \\beta)}{B(\\alpha, \\beta)}\nIt is evaluated as P_{k,t} = f_B\\big(k;\\, N,\\; \\omega t,\\; \\omega (T - t + 1)\\big), where \\omega is a width factor, k the text token index, t the audio token index, N the text length and T the audio length\nSchedule: for the first S_1 steps simply multiply cross-attention by the prior, then over the next S_2 steps anneal it towards a matrix of all ones\nObservation: the CTC loss formulation allows all possible monotonic alignments to be considered\nGiven that the audio token sequence is longer than the text token sequence, the CTC loss can be computed on all cross-attention matrices → penalising the model for non-monotonic attention\n\\mathcal{L}_{\\text{align}} = \\text{CTCLoss}\\big(\\log A,\\; y\\big), \\qquad A \\in \\mathbb{R}^{T \\times N}\nwhere A is the cross-attention matrix (audio steps \\times text tokens) treated as per-step emission probabilities, and y is the text transcript"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#cross-attention-visualized",
+    "href": "magpie-tts-codecs/slides.html#cross-attention-visualized",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Cross-Attention Visualized",
+    "text": "Cross-Attention Visualized\n\n\nQuestion timesteps are the text to generate, answer timesteps are the audio token sequence\nThe prior alone visually sharpens the alignment, but it is not enough — only adding the CTC loss makes it strictly monotonic"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#ablations",
+    "href": "magpie-tts-codecs/slides.html#ablations",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Ablations",
+    "text": "Ablations\n\n\n\n\n\n\nAuthors experimented with where to place the audio prompt: encoder or decoder\nThere is no version with \\mathcal{L}_{align} (CTC loss) but without the prior — results were unintelligible, even though the attention was monotonic\n\n\n\n\n\n\n\nAs we will see later, even though DAC has the best reconstruction, it does not perform well downstream"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#evaluation",
+    "href": "magpie-tts-codecs/slides.html#evaluation",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Evaluation",
+    "text": "Evaluation\n\n\n\n\n\n\nFor the baselines the authors took pretrained models with official checkpoints\nWER evaluation — 100 challenging texts and 2 seen speakers (male and female)\nMOS evaluation — 100 sentences from the Harvard Sentences, each audio rated by at least 10 listeners → 2 k evaluations per model"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#low-frame-rate-codec-outline",
+    "href": "magpie-tts-codecs/slides.html#low-frame-rate-codec-outline",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Low Frame Rate Codec — Outline",
+    "text": "Low Frame Rate Codec — Outline\n\nReused from the Spectral Codec:\n\nFSQ quantization with 8 parallel codebooks\nHiFi-GAN waveform decoder\nRetains the same adversarial discriminators\n\nKey modifications:\n\nFrame rate cut to 21.5 fps (vs. 86.1 fps in the Spectral Codec) → far fewer tokens per second\nTwo-stage training: first trained without quantization, then fine-tuned with quantization\nLarger FSQ codebooks: 2016 levels ([8, 7, 6, 6]) per codebook vs. 1000 ([8, 5, 5, 5]) in the Spectral Codec\nConsumes raw audio directly instead of mel spectrograms\nAdds a convolutional WavLM-based discriminator\nOperates at 22.05 kHz\n\n\n\nLSFC Encoder: HiFi-GAN MRF blocks with dilation rate 1, each followed by a strided 1D conv for downsampling → strides mirror the decoder’s upsampling"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#low-frame-rate-codec-reconstruction",
+    "href": "magpie-tts-codecs/slides.html#low-frame-rate-codec-reconstruction",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Low Frame Rate Codec — Reconstruction",
+    "text": "Low Frame Rate Codec — Reconstruction\n\n\n\n\n\n\nFor reference-based metrics, the reference is resampled to each codec’s own sample rate\nDAC is strong, but only at its full bitrate\nThe Spectral Codec has very poor SI-SDR yet good Mel distance — consistent with the earlier observation that spectral and waveform codecs each excel in their own domain"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#low-frame-rate-codec-ablations",
+    "href": "magpie-tts-codecs/slides.html#low-frame-rate-codec-ablations",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Low Frame Rate Codec — Ablations",
+    "text": "Low Frame Rate Codec — Ablations\n\n\n\n\n\n\nScaling FSQ from 1000 to 2016 levels helps, but scaling further gives diminishing returns\nThe WavLM discriminator improves intelligibility"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#low-frame-rate-codec-tts-results",
+    "href": "magpie-tts-codecs/slides.html#low-frame-rate-codec-tts-results",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Low Frame Rate Codec — TTS Results",
+    "text": "Low Frame Rate Codec — TTS Results\n\n\n\n\n\n\nEncoder–decoder T5-TTS trained on 1.8 k hours of English\nRVQ uses a delay pattern; the Spectral Codec and LFSC are predicted in parallel\nMuch better than the baselines, and also beats the 4032-level FSQ variant\n\n\nReconstruction quality is not fully aligned with TTS quality\n\nFSQ 4032 reconstructs well but performs worse downstream\nThe strongest DAC model is only good at reconstruction — it was never optimized for TTS"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#nano-codec-outline",
+    "href": "magpie-tts-codecs/slides.html#nano-codec-outline",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Nano Codec — Outline",
+    "text": "Nano Codec — Outline\n\nBuilds upon the LFSC with a few modifications\n\nSnake activation instead of LeakyReLU\nDifferent dilation rates in the encoder\nExperiments with causality in the encoder and decoder by switching to causal convolutions\nReplaces the complex MS-STFT discriminator with a multi-band MS-STFT discriminator\nAdds a speaker consistency loss — maximise the cosine similarity between speaker embeddings of the real and reconstructed audio:\n\\mathcal{L}_{SC} = -\\frac{\\alpha}{N} \\sum_{n=1}^{N} \\cos\\left(\\phi(x_n),\\; \\phi(\\hat{x}_n)\\right) = -\\frac{\\alpha}{N} \\sum_{n=1}^{N} \\frac{\\phi(x_n) \\cdot \\phi(\\hat{x}_n)}{\\lVert \\phi(x_n) \\rVert_2 \\, \\lVert \\phi(\\hat{x}_n) \\rVert_2}\nwhere \\phi is a pretrained speaker verification encoder and \\hat{x}_n = G(x_n)"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#nano-codec-ablations",
+    "href": "magpie-tts-codecs/slides.html#nano-codec-ablations",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Nano Codec — Ablations",
+    "text": "Nano Codec — Ablations\n\n\n\n\n\n\nThe fully causal model gives the worst results, the fully non-causal one the best\nThe partially causal model is a good trade-off and better suited to downstream TTS — the only version used from then on\n6.25 fps performs poorly; between 12.5 and 25 fps the authors keep 12.5 fps, since it is comparable on CER, SECS and SQMOS\nBitrate reduction (smaller codebooks) is strongly correlated with worse CER and SECS\nFinally, 12.5 fps with more FSQ layers vs 21.5 fps with fewer layers turn out comparable on all metrics"
+  },
+  {
+    "objectID": "magpie-tts-codecs/slides.html#nano-codec-zero-shot-tts-results",
+    "href": "magpie-tts-codecs/slides.html#nano-codec-zero-shot-tts-results",
+    "title": "Magpie TTS – Codecs Evolution",
+    "section": "Nano Codec — Zero-Shot TTS Results",
+    "text": "Nano Codec — Zero-Shot TTS Results\n\n\n\n\n\n\nKoel-TTS — encoder–decoder TTS similar to T5, trained with CFG but without DPO (RL); a separate model is trained per codec on 18 k hours of English\nResults are better or comparable to the LFSC with a much smaller latency (TTFA)\nVisible speaker similarity gap between 12.5 and 21.5 fps — interesting observation that at a lower frame rate the prompt is shorter, which itself hurts speaker similarity"
   }
 ]

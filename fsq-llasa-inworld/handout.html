@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-9de9f6925d305bcf5b7eb9351f368d06.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.9.38">
+
+  <meta name="author" content="Vladislav Stankov">
+  <title>Presentations – FSQ, LLaSA &amp; Inworld TTS</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reveal.css">
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/theme/quarto-602afe5f004ef3385ed7569169aba181.css">
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+  <link href="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <style type="text/css">
+    .reveal div.sourceCode {
+      margin: 0;
+      overflow: auto;
+    }
+    .reveal div.hanging-indent {
+      margin-left: 1em;
+      text-indent: -1em;
+    }
+    .reveal .slide:not(.center) {
+      height: 100%;
+    }
+    .reveal .slide.scrollable {
+      overflow-y: auto;
+    }
+    .reveal .footnotes {
+      height: 100%;
+      overflow-y: auto;
+    }
+    .reveal .slide .absolute {
+      position: absolute;
+      display: block;
+    }
+    .reveal .footnotes ol {
+      counter-reset: ol;
+      list-style-type: none; 
+      margin-left: 0;
+    }
+    .reveal .footnotes ol li:before {
+      counter-increment: ol;
+      content: counter(ol) ". "; 
+    }
+    .reveal .footnotes ol li > p:first-child {
+      display: inline-block;
+    }
+    .reveal .slide ul,
+    .reveal .slide ol {
+      margin-bottom: 0.5em;
+    }
+    .reveal .slide ul li,
+    .reveal .slide ol li {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide ul[role="tablist"] li {
+      margin-bottom: 0;
+    }
+    .reveal .slide ul li > *:first-child,
+    .reveal .slide ol li > *:first-child {
+      margin-block-start: 0;
+    }
+    .reveal .slide ul li > *:last-child,
+    .reveal .slide ol li > *:last-child {
+      margin-block-end: 0;
+    }
+    .reveal .slide .columns:nth-child(3) {
+      margin-block-start: 0.8em;
+    }
+    .reveal blockquote {
+      box-shadow: none;
+    }
+    .reveal .tippy-content>* {
+      margin-top: 0.2em;
+      margin-bottom: 0.7em;
+    }
+    .reveal .tippy-content>*:last-child {
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide > img.stretch.quarto-figure-center,
+    .reveal .slide > img.r-stretch.quarto-figure-center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-left,
+    .reveal .slide > img.r-stretch.quarto-figure-left  {
+      display: block;
+      margin-left: 0;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-right,
+    .reveal .slide > img.r-stretch.quarto-figure-right  {
+      display: block;
+      margin-left: auto;
+      margin-right: 0; 
+    }
+  </style>
+</head>
+<body class="quarto-light">
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide" class="quarto-title-block center">
+  <h1 class="title">FSQ, LLaSA &amp; Inworld TTS</h1>
+  <p class="subtitle">Handout</p>
+
+<div class="quarto-title-authors">
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Vladislav Stankov 
+</div>
+</div>
+</div>
+
+</section>
+<section>
+<section id="finite-scalar-quantization" class="title-slide slide level1 center" data-background-color="#2d4059">
+<h1>Finite Scalar Quantization</h1>
+
+</section>
+<section id="vq-recap-quantized-vae" class="slide level2">
+<h2>VQ Recap — Quantized VAE</h2>
+<ul>
+<li>VAE with a <strong>quantization bottleneck</strong>: encoder <span class="math inline">\rightarrow</span> continuous latent <span class="math inline">z_e</span> <span class="math inline">\rightarrow</span> quantize <span class="math inline">\rightarrow</span> decoder</li>
+<li>Quantization: map <span class="math inline">z_e</span> to the <strong>nearest codebook entry</strong> (argmin / nearest-neighbor)</li>
+</ul>
+<div class="fragment">
+<p><span class="math display">
+z_q = e_k, \quad k = \arg\min_j \| z_e - e_j \|_2
+</span></p>
+</div>
+<ul>
+<li>Codebook <span class="math inline">\mathcal{C} = \{e_k\}_{k=1}^{K}</span> is a <strong>learnable embedding table</strong></li>
+<li>Argmin is not differentiable — use <strong>STE</strong>: copy gradients from decoder input straight to encoder output</li>
+<li>VAE formulation holds exactly, but KL term is <strong>constant</strong> — we use a deterministic policy (argmin), not sampling</li>
+<li>Training uses <strong>reconstruction</strong>, <strong>codebook</strong>, and <strong>commitment</strong> losses (sometimes EMA instead of codebook loss) — needed to make VQ-VAE learn and stabilize training</li>
+</ul>
+</section>
+<section id="rvq-residual-vector-quantization" class="slide level2">
+<h2>RVQ — Residual Vector Quantization</h2>
+<ul>
+<li>What if <strong>one codebook is not enough</strong>? — single VQ reconstruction is lossy, the quantization error can be significant</li>
+<li>Naive fix: just make the codebook larger — but this <strong>doesn’t scale</strong>; utilization drops sharply beyond <span class="math inline">\sim 2^{11}</span> entries (dead codes)</li>
+<li>Better idea: quantize, compute the <strong>residual</strong>, quantize the residual, repeat</li>
+</ul>
+<div class="fragment">
+<p><span class="math display">
+r_0 = z_e, \quad z_q^{(i)} = \text{VQ}_i(r_{i-1}), \quad r_i = r_{i-1} - z_q^{(i)}
+</span></p>
+</div>
+<ul>
+<li>Final representation: <span class="math inline">\hat{z} = \sum_{i=1}^{N} z_q^{(i)}</span> — sum of <span class="math inline">N</span> codebook lookups</li>
+<li>Much more <strong>versatile</strong> than single-codebook VQ</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/rvq-arch.png" height="480"></p>
+</div>
+</section>
+<section id="vq-rvq-common-issues" class="slide level2">
+<h2>VQ &amp; RVQ — Common Issues</h2>
+<ul>
+<li>A frame is a vector of codebook indices: <span class="math inline">\mathbf{c} = [c_1, c_2, \dots, c_N]</span></li>
+<li>But <span class="math inline">c_i</span> depends on the residual from steps <span class="math inline">1, \dots, i{-}1</span></li>
+</ul>
+<div class="fragment">
+<p><span class="math display">
+c_i = f\bigl(r_{i-1}\bigr) = f\bigl(z_e - \textstyle\sum_{j=1}^{i-1} e_{c_j}\bigr)
+</span></p>
+</div>
+<ul>
+<li><strong>Codebooks are not independent</strong> — the <span class="math inline">i</span>-th code is meaningless without knowing all previous codes</li>
+<li>Cannot predict the whole frame <span class="math inline">\mathbf{c} = [c_1, \dots, c_N]</span> at once — ideally need to predict each <span class="math inline">c_i</span> <strong>autoregressively</strong>, conditioned on <span class="math inline">c_1, \dots, c_{i-1}</span></li>
+<li><strong>Dead codes</strong>: some codebook entries are never selected — requires tracking utilization and <strong>reinitialization</strong> strategies</li>
+<li>Training can be <strong>unstable</strong> — balancing reconstruction, commitment, and codebook losses is fragile (applies to both VQ and RVQ)</li>
+<li>Motivates alternatives like <strong>FSQ</strong> that avoid these issues entirely</li>
+</ul>
+</section>
+<section id="fsq-finite-scalar-quantization-overview" class="slide level2">
+<h2>FSQ — Finite Scalar Quantization Overview</h2>
+<ul>
+<li><strong>Drop-in replacement</strong> for VQ and RVQ (in theory)</li>
+<li><strong>No additional losses</strong> — no commitment loss, no codebook loss, no EMA</li>
+<li><strong>No learned embedding tables</strong> — the codebook is <strong>implicit</strong>, directly quantize the encoder’s latent space</li>
+<li>Still uses <strong>STE</strong> to pass gradients through to the encoder</li>
+<li>Achieves very high utilization even for much larger codebooks: <span class="math inline">\sim 2^{10}</span> in VQ vs <span class="math inline">\sim 2^{16}</span> in FSQ</li>
+</ul>
+</section>
+<section id="fsq-a-new-quantization-paradigm" class="slide level2">
+<h2>FSQ — A New Quantization Paradigm</h2>
+<ul>
+<li>Unlike VQ where <span class="math inline">d \geq 512</span>, FSQ uses a <strong>very small</strong> encoder output: <span class="math inline">d &lt; 10</span>, so <span class="math inline">z_e \in \mathbb{R}^d</span></li>
+<li>Each dimension is <strong>bounded</strong> to <span class="math inline">L_i</span> discrete levels via rounding:</li>
+</ul>
+<div class="fragment">
+<p><span class="math display">
+\hat{z}_i = \left\lfloor \frac{L_i - 1}{2} \cdot \tanh(z_i) \right\rceil
+</span></p>
+</div>
+<ul>
+<li>Example: <span class="math inline">d = 3</span>, <span class="math inline">L = 3</span> <span class="math inline">\Rightarrow</span> each dimension in <span class="math inline">\{-1, 0, 1\}</span> <span class="math inline">\Rightarrow</span> <strong>implicit codebook</strong> of size <span class="math inline">L^d = 3^3 = 27</span></li>
+<li>We can <strong>enumerate all possible vectors</strong> — the codebook is the full Cartesian product: <span class="math inline">\mathcal{C} = \{1, 2, \dots, L^d\}</span></li>
+<li>In general <span class="math inline">L_i</span> can differ per dimension — codebook size is <span class="math inline">\prod_{i=1}^{d} L_i</span></li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/vq-vs-fsq.png" height="450"></p>
+</div>
+</section>
+<section id="vq-vs-fsq-intuition" class="slide level2">
+<h2>VQ vs FSQ — Intuition</h2>
+<ul>
+<li>VQ is potentially <strong>more expressive</strong> — it learns where to place each code vector freely in the latent space via separate embedding vectors</li>
+<li>FSQ is <strong>more constrained</strong> — the latent space is bounded, and the encoder must fit its representation into a fixed grid</li>
+<li>This difference is mostly <strong>theoretical</strong> — both models are highly nonlinear, and with powerful enough encoders the expressiveness gap shrinks</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/vq-vs-fsq-vis.png" height="500"></p>
+</div>
+</section>
+<section id="fsq-vs-vq-evaluation" class="slide level2">
+<h2>FSQ vs VQ — Evaluation</h2>
+<ul>
+<li>Train VQ and FSQ on images, then generate images with <strong>MaskGIT</strong> (class-conditional BERT, predicts codes)</li>
+<li><strong>Reconstruction FID</strong>: Fréchet Inception Distance between real images and their reconstructions</li>
+<li><strong>Sampling FID</strong>: FID of images generated by MaskGIT using the learned codes</li>
+<li><strong>Codebook usage</strong>: fraction of codewords used at least once</li>
+<li><strong>Compression cost</strong>: how hard is it for the model to use this encoding — is codeword usage close to uniform?</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/fsq-vs-vq-eval.png" height="700"></p>
+</div>
+</section></section>
+<section>
+<section id="llasa" class="title-slide slide level1 center" data-background-color="#34495e">
+<h1>LLaSA</h1>
+
+</section>
+<section id="llasa-overview" class="slide level2">
+<h2>LLaSA — Overview</h2>
+<ul>
+<li>Many zero-shot voice cloning approaches invent <strong>custom architectures / pipelines</strong> to improve quality</li>
+<li>LLaSA: first attempt to use a <strong>traditional LLM approach</strong> for speech — decoder-only model + audio tokenizer</li>
+<li>Made possible by <strong>FSQ</strong>: no need to change the LLM at all, just <strong>next-token prediction</strong></li>
+<li>Instead of studying architecture choices, they invest in understanding <strong>scaling principles</strong>: scale compute during training or during inference</li>
+<li>One of the first papers to measure how <strong>scaling inference compute</strong> can significantly improve output quality</li>
+</ul>
+</section>
+<section id="llasa-design" class="slide level2">
+<h2>LLaSA — Design</h2>
+<ul>
+<li><strong>Backbones</strong>: LLaMA 3.2 (1B, 3B) and LLaMA 3.1 (8B) with extended vocabulary</li>
+<li>LLM trained on quadruples: <em>(prompt text, text to generate, audio prompt, audio to generate)</em> — loss computed <strong>only on audio tokens</strong></li>
+<li>Target languages: <strong>English and Chinese</strong> (bilingual)</li>
+<li>Dataset sizes: <strong>80k, 160k, 250k hours</strong></li>
+<li><strong>XCodec2</strong>: replaces RVQ with FSQ; decoder follows <strong>Vocos</strong> — transformer predicting STFT magnitude &amp; phase + iSTFT to generate audio</li>
+<li>Audio tokenizer trained on <strong>150k hours</strong> (MLS + Emilia), 16 kHz, codebook size <strong>65k</strong>, covering <strong>10 languages</strong> (Asian and European)</li>
+</ul>
+</section>
+<section id="xcodec2-results" class="slide level2">
+<h2>XCodec2 — Results</h2>
+<div style="text-align: center;">
+<p><img data-src="images/xcodec2-results.png" height="600"></p>
+</div>
+<ul>
+<li><strong>Encodec</strong>: 8 codebooks, 75 Hz frame rate, bitrate <span class="math inline">= \log_2(1024) \times 8 \times 75 = 6</span> kbps</li>
+<li><strong>DAC</strong>: 8 codebooks × 50 Hz, bitrate <span class="math inline">= \log_2(1024) \times 12 \times 50 = 6</span> kbps</li>
+<li><strong>XCodec2</strong>: single codebook → <strong>0.8 kbps</strong>; BigCodec → 1.04 kbps</li>
+<li>Models with very low kbps achieve <strong>UTMOS scores higher than ground truth</strong> — the decoder acts as a <strong>generator</strong>, not just a reconstructor</li>
+<li>However, <strong>PESQ and speaker similarity (SIM)</strong> are usually lower at low bitrates compared to high-bitrate models</li>
+</ul>
+</section>
+<section id="llasa-training-scaling" class="slide level2">
+<h2>LLaSA — Training Scaling</h2>
+<p>Evaluation protocol borrowed from <strong>BASE TTS</strong>:</p>
+<table style="width:100%; table-layout:fixed; font-size: 0.65em;">
+<colgroup>
+<col style="width:12%">
+<col style="width:35%">
+<col style="width:16%">
+<col style="width:21%">
+<col style="width:16%">
+</colgroup>
+<thead>
+<tr>
+<th>
+Category
+</th>
+<th>
+Example
+</th>
+<th>
+1 (Bad)
+</th>
+<th>
+2 (Ok)
+</th>
+<th>
+3 (Good)
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Compound Nouns
+</td>
+<td>
+“stone-built quaint countryside holiday cottage”
+</td>
+<td>
+Fails to recognise
+</td>
+<td>
+Unnatural stress
+</td>
+<td>
+Natural phrasal stress
+</td>
+</tr>
+<tr>
+<td>
+Emotions
+</td>
+<td>
+“Oh my gosh! Are we really going to the Maldives?”
+</td>
+<td>
+No audible emotion
+</td>
+<td>
+Present but insufficient
+</td>
+<td>
+Correct recognition
+</td>
+</tr>
+<tr>
+<td>
+Foreign Words
+</td>
+<td>
+“mise en place … pièce de résistance”
+</td>
+<td>
+Incorrect pronunciation
+</td>
+<td>
+Foreign accent, not quite right
+</td>
+<td>
+Correct rendering
+</td>
+</tr>
+<tr>
+<td>
+Paralinguistics
+</td>
+<td>
+“Shh, Lucy, shhh, we mustn’t wake…”
+</td>
+<td>
+No recognition
+</td>
+<td>
+Distinct but unnatural
+</td>
+<td>
+Natural rendering
+</td>
+</tr>
+<tr>
+<td>
+Punctuations
+</td>
+<td>
+“Emergency @ home; call ASAP! … #familymatters”
+</td>
+<td>
+Glitches on # or &amp;
+</td>
+<td>
+No glitch, incorrect
+</td>
+<td>
+Correct pausing
+</td>
+</tr>
+<tr>
+<td>
+Questions
+</td>
+<td>
+“will the ministers find the answers in time?”
+</td>
+<td>
+Wrong intonation
+</td>
+<td>
+Largely correct
+</td>
+<td>
+Correct intonation
+</td>
+</tr>
+<tr>
+<td>
+Syntactic
+</td>
+<td>
+“The movie that De Moya … was a box-office hit”
+</td>
+<td>
+Fails to parse
+</td>
+<td>
+Parses but unnatural
+</td>
+<td>
+Correct &amp; natural
+</td>
+</tr>
+</tbody>
+</table>
+<div style="margin-top: 2em;">
+
+</div>
+<div class="fragment" style="font-size: 1em;">
+<ul>
+<li>Foreign words, compound nouns → <strong>data</strong>; Punctuation, syntactic complexity → <strong>model size</strong>; Emotions, paralinguistics → <strong>both</strong></li>
+</ul>
+</div>
+<div class="columns">
+<div class="column" style="width:60%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/llasa-training-scaling.png" height="300"></p>
+</div>
+</div><div class="column" style="width:40%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/base-tts-training-scaling.png" height="320"></p>
+</div>
+</div></div>
+<div class="fragment" style="font-size: 1em;">
+<ul>
+<li>BASE TTS: trained <strong>from scratch</strong>; <strong>Small</strong> 150M + 1k hrs, <strong>Base</strong> 400M + 10k hrs, <strong>Large</strong> 1B + 100k hrs</li>
+</ul>
+</div>
+</section>
+<section id="llasa-inference-scaling" class="slide level2">
+<h2>LLaSA — Inference Scaling</h2>
+<div style="font-size: 0.85em;">
+<p>Inference compute scaling — three strategies:</p>
+</div>
+<ul>
+<li><strong>PRM</strong> (Process Reward Model): beam search during generation — <span class="math inline">M</span> beams × <span class="math inline">N</span> candidates, generate ~0.5s chunks, keep top <span class="math inline">M</span>, continue</li>
+<li><strong>ORM</strong> (Output Reward Model): generate <span class="math inline">M \times N</span> candidates (to match beam search budget), select best by reward (SIM, WER)</li>
+<li><strong>Partial PRM</strong>: use PRM for first ~2 seconds, then switch to ORM for the remainder (generate rest, choose best)</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/llasa-inference-scalining.png" height="520"></p>
+</div>
+</section>
+<section id="llasa-final-results" class="slide level2">
+<h2>LLaSA — Final Results</h2>
+<div style="text-align: center;">
+<p><img data-src="images/llasa-final-results.png" height="800"></p>
+</div>
+<ul>
+<li>Using inference scaling is <strong>not a fair comparison</strong> against baselines (they don’t use it)</li>
+<li>But it demonstrates how we can <strong>push quality further</strong> at the cost of extra compute</li>
+</ul>
+</section></section>
+<section>
+<section id="inworld-tts" class="title-slide slide level1 center" data-background-color="#1a5276">
+<h1>Inworld TTS</h1>
+
+</section>
+<section id="inworld-llasa-maxing" class="slide level2">
+<h2>Inworld — LLaSA Maxing</h2>
+<ul>
+<li>Extends the LLaSA idea (pure LLM machinery) with full training pipeline: <strong>pretraining</strong> (1M hours), <strong>SFT</strong> (200k hours), and <strong>reinforcement learning</strong></li>
+<li>Two variants: <strong>Small</strong> (LLaMA 3.2 Instruct 1B) and <strong>Large</strong> (LLaMA 3.1 3B)</li>
+<li>XCodec2 at 16 kHz + a <strong>super-resolution component</strong> to generate 48 kHz output</li>
+<li><strong>Speech Markup Language</strong>: control speaking styles and non-verbals via tags, with <strong>LoRA fine-tuning</strong></li>
+<li>Streaming audio generation <span class="math inline">\neq</span> streaming TTS — model needs to see <strong>full text first</strong>, then generates audio in streaming mode</li>
+<li>Architecture is <strong>untouched</strong> — same decoder-only LLM + tokenizer</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-arch.png" height="380"></p>
+</div>
+</section>
+<section id="inworld-audio-tokenizer" class="slide level2">
+<h2>Inworld — Audio Tokenizer</h2>
+<ul>
+<li>Architecture follows <strong>XCodec2</strong> — input is always <strong>16 kHz</strong> audio</li>
+<li><strong>50 tokens/s</strong>, codebook size <strong>65k</strong> — same as XCodec2, trained on <strong>110k hours</strong></li>
+<li>Different decoders for different target sample rates: <strong>16 kHz</strong>, <strong>24 kHz</strong>, and <strong>48 kHz</strong></li>
+<li>16 kHz and 24 kHz decoders are <strong>identical</strong> — only difference is iSTFT hop size (320 vs 480); trained independently</li>
+<li>For <strong>48 kHz</strong>: add 1D transposed ResNet blocks for upsampling
+<ul>
+<li>First train on audios with estimated bandwidth <span class="math inline">\geq</span> 32 kHz</li>
+<li>Fine-tune only on audios with estimated bandwidth <span class="math inline">\geq</span> 44.1 kHz</li>
+</ul></li>
+<li>All models use an additional <strong>RMS volume loss</strong> — without it, streaming audio generation can produce volume jumps</li>
+</ul>
+<div class="columns">
+<div class="column" style="width:70%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-tokenizer-arch.png" height="250"></p>
+</div>
+</div><div class="column" style="width:30%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inwotld-tokenizer-decoders-comp.png" height="250"></p>
+</div>
+</div></div>
+</section>
+<section id="inworld-pretraining" class="slide level2">
+<h2>Inworld — Pretraining</h2>
+<ul>
+<li>Audio without transcripts, fixed duration <strong>40s</strong> segments — start/end marked with special tokens</li>
+<li>Also used <strong>20B text tokens</strong> (instruction data) — without it, model degrades text understanding</li>
+<li>Fixed batch sizes → used <strong>torch.compile</strong> to speed up training</li>
+<li><strong>32 H100 GPUs</strong>: Small pretrain took <strong>2 days</strong>, Large took <strong>10 days</strong></li>
+<li>Evaluation: <strong>5k utterances</strong> across languages, <strong>continuation task</strong> — 10s utterances, first half as prompt, measure speaker similarity</li>
+</ul>
+<div class="columns">
+<div class="column" style="width:40%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-pretrain-params.png" height="350"></p>
+</div>
+</div><div class="column" style="width:60%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-pretrain-sim.png" height="350"></p>
+</div>
+</div></div>
+</section>
+<section id="inworld-sft" class="slide level2">
+<h2>Inworld — SFT</h2>
+<ul>
+<li><strong>Data preparation</strong> — DNSMOS + language-specific CPS (chars/sec) filtering:
+<ul>
+<li>Filter out bottom <strong>20%</strong> by DNSMOS</li>
+<li>Remove <strong>5% outliers</strong> (each end) for CPS per language</li>
+<li>Filter out pairs with low-quality transcriptions (excess punctuation, non-speech content)</li>
+</ul></li>
+<li>Train NTP on audio tokens: <code>&lt;|begin_of_text|&gt;</code> <span class="math inline">x_1, \dots, x_T</span> <code>&lt;|speech_start|&gt;</code> <span class="math inline">y_1, \dots, y_S</span> <code>&lt;|speech_end|&gt;</code></li>
+<li>Variable-length sequences → <strong>torch.compile unavailable</strong> — ~3× slowdown vs pretraining</li>
+<li>Experimented with SFT on <strong>pretrained</strong> and <strong>non-pretrained</strong> (text-base initialization) models</li>
+<li>Tried <strong>instruction following</strong> during SFT but it failed — appears unsupported (dead code remains)</li>
+</ul>
+<div class="columns">
+<div class="column" style="width:50%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-sft-params.png" height="500"></p>
+</div>
+</div><div class="column" style="width:50%;">
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-sft-train-loss.png" height="450"></p>
+</div>
+</div></div>
+</section>
+<section id="inworld-reinforcement-learning" class="slide level2">
+<h2>Inworld — Reinforcement Learning</h2>
+<ul>
+<li><strong>GRPO</strong>: sample several audio completions for the same prompt, reinforce outputs scoring <strong>above group average</strong>, suppress those below</li>
+<li>Rewards computed on decoded 48 kHz waveform: <strong>Whisper WER</strong>, <strong>WavLM speaker similarity</strong>, <strong>DNSMOS quality</strong></li>
+<li><strong>Clipped updates + KL penalty</strong> keep RL model close to SFT checkpoint — reduces reward-driven degeneration</li>
+<li>Trained <strong>3 specialized TTS models</strong> (each optimizing one reward) and <strong>1 unified TTS model</strong> (all three rewards) — to check if joint optimization loses quality</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-rl-results.png" height="550"></p>
+</div>
+</section>
+<section id="inworld-audio-markups" class="slide level2">
+<h2>Inworld — Audio Markups</h2>
+<ul>
+<li>Tags control style and non-verbals: <code>[angry]</code>, <code>[whispering]</code>, <code>[laugh]</code>, <code>[sigh]</code></li>
+<li>Adding <strong>style tags</strong> during normal SFT <strong>failed</strong> — model often ignored them</li>
+<li>Codec tokens mix speaker identity, style, prosody, and content</li>
+<li>Train on same-speaker <strong>neutral + styled recordings</strong> joined by silence</li>
+<li>Separate <strong>LoRA stage</strong> learns markup control on ~180 hours of English data, likely after RL</li>
+<li>Tag embeddings may remain poorly learned — LoRA updates model layers, not the embedding table</li>
+<li>Style control <strong>transfers to other languages</strong> despite English-only markup training</li>
+<li>Combining tags creates <strong>meaningful new styles</strong> not seen during training</li>
+<li>Speaker embeddings may help separate speaker and style, but style can still leak into them</li>
+<li>Paper and code <strong>do not fully match</strong>; some users report tags being spoken aloud; no evidence in code that style tags are actual tags</li>
+<li>In general, <strong>evaluation of style control is very difficult</strong> — no standard metrics or benchmarks</li>
+</ul>
+<div class="columns">
+<div class="column" style="width:50%;">
+<div class="fragment" style="text-align: center;">
+<!-- ![](images/inworld-markups-1.png){height="300px"} -->
+</div>
+</div><div class="column" style="width:50%;">
+<div class="fragment" style="text-align: center;">
+<!-- ![](images/inworld-markups-2.png){height="300px"} -->
+</div>
+</div></div>
+</section>
+<section id="inworld-evaluation" class="slide level2">
+<h2>Inworld — Evaluation</h2>
+<div class="columns">
+<div class="column" style="width:30%;">
+<div style="text-align: center;">
+<p><img data-src="images/inworld-eval-wer.png" height="150"></p>
+</div>
+</div><div class="column" style="width:70%;">
+<div style="text-align: center;">
+<p><img data-src="images/inworld-eval-languages.png" height="400"></p>
+</div>
+</div></div>
+<ul>
+<li><strong>WER</strong> (English only) across different text lengths — compared full pipeline (pretrain + SFT + RL) vs SFT only</li>
+<li>Generated <strong>100 sentences</strong> for <strong>11 supported languages</strong>, synthesized with same speakers (Small and Large)</li>
+<li><strong>Internal arena</strong>: 20 human voters, 400 evaluations total</li>
+<li>Workflow for best quality: use <strong>LoRA to fine-tune on a single speaker</strong> instead of zero-shot</li>
+</ul>
+<div class="fragment" style="text-align: center;">
+<p><img data-src="images/inworld-eval-arena.png" height="250"></p>
+</div>
+</section>
+<section id="references" class="slide level2">
+<h2>References</h2>
+<ul>
+<li>Mentzer et al., “Finite Scalar Quantization: VQ-VAE Made Simple” (ICLR 2024)</li>
+<li>LLaSA paper and XCodec2</li>
+<li>Inworld AI documentation</li>
+</ul>
+</section>
+<section id="section" class="slide level2" data-background-color="#2c3e50">
+<h2></h2>
+<section id="thank-you" style="text-align: center; margin-top: 200px;">
+<h3>Thank you!</h3>
+<p>Questions?</p>
+</section>
+
+
+</section></section>
+    </div>
+  <div class="quarto-auto-generated-content" style="display: none;">
+<div class="footer footer-default">
+
+</div>
+</div></div>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script>
+  <script src="../site_libs/revealjs/dist/reveal.js"></script>
+  <!-- reveal.js plugins -->
+  <script src="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="../site_libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/quarto-support/support.js"></script>
+  
+
+  <script src="../site_libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="../site_libs/revealjs/plugin/search/search.js"></script>
+  <script src="../site_libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+'controlsAuto': true,
+'previewLinksAuto': false,
+'pdfSeparateFragments': false,
+'autoAnimateEasing': "ease",
+'autoAnimateDuration': 1,
+'autoAnimateUnmatched': true,
+'jumpToSlide': true,
+'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleScrollView(event)\"><kbd>r</kbd> Scroll View Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"5\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
+'smaller': false,
+ 
+        // Display controls in the bottom right corner
+        controls: false,
+
+        // Help the user learn the controls by providing hints, for example by
+        // bouncing the down arrow when they first encounter a vertical slide
+        controlsTutorial: false,
+
+        // Determines where controls appear, "edges" or "bottom-right"
+        controlsLayout: 'edges',
+
+        // Visibility rule for backwards navigation arrows; "faded", "hidden"
+        // or "visible"
+        controlsBackArrows: 'faded',
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Display the page number of the current slide
+        slideNumber: 'c/t',
+
+        // 'all', 'print', or 'speaker'
+        showSlideNumber: 'all',
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Start with 1 for the hash rather than 0
+        hashOneBasedIndex: false,
+
+        // Flags if we should monitor the hash and change slides accordingly
+        respondToHashChanges: true,
+
+        // Push each slide change to the browser history
+        history: true,
+
+        // Enable keyboard shortcuts for navigation
+        keyboard: true,
+
+        // Enable the slide overview mode
+        overview: true,
+
+        // Disables the default reveal.js slide layout (scaling and centering)
+        // so that you can use custom CSS layout
+        disableLayout: false,
+
+        // Vertical centering of slides
+        center: false,
+
+        // Enables touch navigation on devices with touch input
+        touch: true,
+
+        // Loop the presentation
+        loop: false,
+
+        // Change the presentation direction to be RTL
+        rtl: false,
+
+        // see https://revealjs.com/vertical-slides/#navigation-mode
+        navigationMode: 'linear',
+
+        // Randomizes the order of slides each time the presentation loads
+        shuffle: false,
+
+        // Turns fragments on and off globally
+        fragments: false,
+
+        // Flags whether to include the current fragment in the URL,
+        // so that reloading brings you to the same fragment position
+        fragmentInURL: false,
+
+        // Flags if the presentation is running in an embedded mode,
+        // i.e. contained within a limited portion of the screen
+        embedded: false,
+
+        // Flags if we should show a help overlay when the questionmark
+        // key is pressed
+        help: true,
+
+        // Flags if it should be possible to pause the presentation (blackout)
+        pause: true,
+
+        // Flags if speaker notes should be visible to all viewers
+        showNotes: false,
+
+        // Global override for autoplaying embedded media (null/true/false)
+        autoPlayMedia: null,
+
+        // Global override for preloading lazy-loaded iframes (null/true/false)
+        preloadIframes: null,
+
+        // Number of milliseconds between automatically proceeding to the
+        // next slide, disabled when set to 0, this value can be overwritten
+        // by using a data-autoslide attribute on your slides
+        autoSlide: 0,
+
+        // Stop auto-sliding after user input
+        autoSlideStoppable: true,
+
+        // Use this method for navigation when auto-sliding
+        autoSlideMethod: null,
+
+        // Specify the average time in seconds that you think you will spend
+        // presenting each slide. This is used to show a pacing timer in the
+        // speaker view
+        defaultTiming: null,
+
+        // Enable slide navigation via mouse wheel
+        mouseWheel: false,
+
+        // The display mode that will be used to show slides
+        display: 'block',
+
+        // Hide cursor if inactive
+        hideInactiveCursor: true,
+
+        // Time before the cursor is hidden (in ms)
+        hideCursorTime: 5000,
+
+        // Opens links in an iframe preview overlay
+        previewLinks: false,
+
+        // Transition style (none/fade/slide/convex/concave/zoom)
+        transition: 'slide',
+
+        // Transition speed (default/fast/slow)
+        transitionSpeed: 'default',
+
+        // Transition style for full page slide backgrounds
+        // (none/fade/slide/convex/concave/zoom)
+        backgroundTransition: 'none',
+
+        // Number of slides away from the current that are visible
+        viewDistance: 3,
+
+        // Number of slides away from the current that are visible on mobile
+        // devices. It is advisable to set this to a lower number than
+        // viewDistance in order to save resources.
+        mobileViewDistance: 2,
+
+        // The "normal" size of the presentation, aspect ratio will be preserved
+        // when the presentation is scaled to fit different resolutions. Can be
+        // specified using percentage units.
+        width: 1920,
+
+        height: 1080,
+
+        // Factor of the display size that should remain empty around the content
+        margin: 0.1,
+
+        // reveal.js plugins
+        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, QuartoSupport,
+
+          RevealNotes,
+          RevealSearch,
+          RevealZoom
+        ]
+      });
+    </script>
+    <script id="quarto-html-after-body" type="application/javascript">
+      window.document.addEventListener("DOMContentLoaded", function (event) {
+        const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+        tabsets.forEach(function(tabset) {
+          const tabby = new Tabby('#' + tabset.id);
+        });
+        const isCodeAnnotation = (el) => {
+          for (const clz of el.classList) {
+            if (clz.startsWith('code-annotation-')) {                     
+              return true;
+            }
+          }
+          return false;
+        }
+        const onCopySuccess = function(e) {
+          // button target
+          const button = e.trigger;
+          // don't keep focus
+          button.blur();
+          // flash "checked"
+          button.classList.add('code-copy-button-checked');
+          var currentTitle = button.getAttribute("title");
+          button.setAttribute("title", "Copied!");
+          let tooltip;
+          if (window.bootstrap) {
+            button.setAttribute("data-bs-toggle", "tooltip");
+            button.setAttribute("data-bs-placement", "left");
+            button.setAttribute("data-bs-title", "Copied!");
+            tooltip = new bootstrap.Tooltip(button, 
+              { trigger: "manual", 
+                customClass: "code-copy-button-tooltip",
+                offset: [0, -8]});
+            tooltip.show();    
+          }
+          setTimeout(function() {
+            if (tooltip) {
+              tooltip.hide();
+              button.removeAttribute("data-bs-title");
+              button.removeAttribute("data-bs-toggle");
+              button.removeAttribute("data-bs-placement");
+            }
+            button.setAttribute("title", currentTitle);
+            button.classList.remove('code-copy-button-checked');
+          }, 1000);
+          // clear code selection
+          e.clearSelection();
+        }
+        const getTextToCopy = function(trigger) {
+          const outerScaffold = trigger.parentElement.cloneNode(true);
+          const codeEl = outerScaffold.querySelector('code');
+          for (const childEl of codeEl.children) {
+            if (isCodeAnnotation(childEl)) {
+              childEl.remove();
+            }
+          }
+          return codeEl.innerText;
+        }
+        const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+          text: getTextToCopy
+        });
+        clipboard.on('success', onCopySuccess);
+        if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+          const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+            text: getTextToCopy,
+            container: window.document.getElementById('quarto-embedded-source-code-modal')
+          });
+          clipboardModal.on('success', onCopySuccess);
+        }
+          var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+          var mailtoRegex = new RegExp(/^mailto:/);
+            var filterRegex = new RegExp("https:\/\/Stanvla\.github\.io\/speech-presentations\/");
+          var isInternal = (href) => {
+              return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+          }
+          // Inspect non-navigation links and adorn them if external
+         var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+          for (var i=0; i<links.length; i++) {
+            const link = links[i];
+            if (!isInternal(link.href)) {
+              // undo the damage that might have been done by quarto-nav.js in the case of
+              // links that we want to consider external
+              if (link.dataset.originalHref !== undefined) {
+                link.href = link.dataset.originalHref;
+              }
+            }
+          }
+        function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+          const config = {
+            allowHTML: true,
+            maxWidth: 500,
+            delay: 100,
+            arrow: false,
+            appendTo: function(el) {
+                return el.closest('section.slide') || el.parentElement;
+            },
+            interactive: true,
+            interactiveBorder: 10,
+            theme: 'light-border',
+            placement: 'bottom-start',
+          };
+          if (contentFn) {
+            config.content = contentFn;
+          }
+          if (onTriggerFn) {
+            config.onTrigger = onTriggerFn;
+          }
+          if (onUntriggerFn) {
+            config.onUntrigger = onUntriggerFn;
+          }
+            config['offset'] = [0,0];
+            config['maxWidth'] = 700;
+          window.tippy(el, config); 
+        }
+        const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+        for (var i=0; i<noterefs.length; i++) {
+          const ref = noterefs[i];
+          tippyHover(ref, function() {
+            // use id or data attribute instead here
+            let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+            try { href = new URL(href).hash; } catch {}
+            const id = href.replace(/^#\/?/, "");
+            const note = window.document.getElementById(id);
+            if (note) {
+              return note.innerHTML;
+            } else {
+              return "";
+            }
+          });
+        }
+        const findCites = (el) => {
+          const parentEl = el.parentElement;
+          if (parentEl) {
+            const cites = parentEl.dataset.cites;
+            if (cites) {
+              return {
+                el,
+                cites: cites.split(' ')
+              };
+            } else {
+              return findCites(el.parentElement)
+            }
+          } else {
+            return undefined;
+          }
+        };
+        var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+        for (var i=0; i<bibliorefs.length; i++) {
+          const ref = bibliorefs[i];
+          const citeInfo = findCites(ref);
+          if (citeInfo) {
+            tippyHover(citeInfo.el, function() {
+              var popup = window.document.createElement('div');
+              citeInfo.cites.forEach(function(cite) {
+                var citeDiv = window.document.createElement('div');
+                citeDiv.classList.add('hanging-indent');
+                citeDiv.classList.add('csl-entry');
+                var biblioDiv = window.document.getElementById('ref-' + cite);
+                if (biblioDiv) {
+                  citeDiv.innerHTML = biblioDiv.innerHTML;
+                }
+                popup.appendChild(citeDiv);
+              });
+              return popup.innerHTML;
+            });
+          }
+        }
+      });
+      </script>
+    
+
+</body></html>

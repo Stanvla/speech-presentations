@@ -177,21 +177,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="handout-mode-no-animations" class="level2">
 <h2 class="anchored" data-anchor-id="handout-mode-no-animations">Handout mode (no animations)</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render fsq-llasa-inworld/slides.qmd <span class="at">--profile</span> handout</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Uses <code>_quarto-handout.yml</code> to disable incremental/chalkboard.</p>
+<p>Each deck is split into three files:</p>
+<pre><code>magpie-tts-codecs/
+  _metadata.yml   # shared revealjs options (theme, size, pointer, ...)
+  _body.qmd       # all slide content, NO front matter
+  slides.qmd      # animated:  incremental: true,  chalkboard: true
+  handout.qmd     # static:    incremental: false, fragments: false</code></pre>
+<p>Both wrappers are just front matter plus <code>{{&lt; include _body.qmd &gt;}}</code>, so content is written once. Files starting with <code>_</code> are ignored by project renders.</p>
+<p>A plain <code>quarto render</code> / <code>quarto publish gh-pages</code> builds both variants:</p>
+<pre><code>_site/magpie-tts-codecs/slides.html    # animated
+_site/magpie-tts-codecs/handout.html   # everything visible at once</code></pre>
+<p><code>fragments: false</code> is what neutralises hardcoded <code>.fragment</code> classes (boxes, mid-slide images); <code>incremental: false</code> alone only affects bullet lists.</p>
 </section>
 <section id="export-to-pdf" class="level2">
 <h2 class="anchored" data-anchor-id="export-to-pdf">Export to PDF</h2>
 <p>Option A — built-in print (no extra tools):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Open the deck in browser, then append ?print-pdf to the URL:</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># http://localhost:4848/fsq-llasa-inworld/slides.html?print-pdf</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Then Ctrl/Cmd+P → Save as PDF (set margins to None, enable Background graphics)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Open the deck in browser, then append ?print-pdf to the URL:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># http://localhost:4848/fsq-llasa-inworld/slides.html?print-pdf</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Then Ctrl/Cmd+P → Save as PDF (set margins to None, enable Background graphics)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Option B — automated via decktape (needs Node.js):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install <span class="at">-g</span> decktape</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render fsq-llasa-inworld/slides.qmd</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">decktape</span> reveal fsq-llasa-inworld/slides.html fsq-llasa-inworld/slides.pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install <span class="at">-g</span> decktape</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render fsq-llasa-inworld/slides.qmd</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">decktape</span> reveal fsq-llasa-inworld/slides.html fsq-llasa-inworld/slides.pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Option C — render directly to PDF format (beamer, not revealjs):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render fsq-llasa-inworld/slides.qmd <span class="at">--to</span> pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render fsq-llasa-inworld/slides.qmd <span class="at">--to</span> pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This produces a Beamer PDF (LaTeX-based, different layout from slides). Requires a TeX installation (<code>quarto install tinytex</code>).</p>
 </section>
 <section id="key-rules" class="level2">

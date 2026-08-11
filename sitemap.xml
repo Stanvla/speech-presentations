@@ -1,19 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://Stanvla.github.io/speech-presentations/magpie-tts-codecs/slides.html</loc>
-    <lastmod>2026-08-11T19:58:39.942Z</lastmod>
+    <loc>https://Stanvla.github.io/speech-presentations/magpie-tts-codecs/handout.html</loc>
+    <lastmod>2026-08-11T20:16:09.637Z</lastmod>
+  </url>
+  <url>
+    <loc>https://Stanvla.github.io/speech-presentations/fsq-llasa-inworld/handout.html</loc>
+    <lastmod>2026-08-11T20:16:09.637Z</lastmod>
   </url>
   <url>
     <loc>https://Stanvla.github.io/speech-presentations/index.html</loc>
-    <lastmod>2026-08-04T10:24:21.957Z</lastmod>
+    <lastmod>2026-08-11T20:16:09.637Z</lastmod>
   </url>
   <url>
     <loc>https://Stanvla.github.io/speech-presentations/WORKFLOW.html</loc>
-    <lastmod>2026-07-15T12:50:20.480Z</lastmod>
+    <lastmod>2026-08-11T20:16:09.643Z</lastmod>
   </url>
   <url>
     <loc>https://Stanvla.github.io/speech-presentations/fsq-llasa-inworld/slides.html</loc>
-    <lastmod>2026-07-16T10:04:00.487Z</lastmod>
+    <lastmod>2026-08-11T20:16:09.637Z</lastmod>
+  </url>
+  <url>
+    <loc>https://Stanvla.github.io/speech-presentations/magpie-tts-codecs/slides.html</loc>
+    <lastmod>2026-08-11T20:16:09.637Z</lastmod>
   </url>
 </urlset>
