@@ -233,12 +233,12 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
 ## Ablations
 
-![](images/t5-ablations.png){.nostretch fig-align="center" width="45%"}
+![](images/t5-ablations.png){.nostretch fig-align="center" width="40%"}
 
 - The authors experimented with **where to place the audio prompt**: encoder or decoder
 - There is no version with $\mathcal{L}_{\text{align}}$ (CTC loss) but **without the prior** — results were **unintelligible**, even though the attention was monotonic
 
-![](images/t5-codec-comparison.png){.fragment .nostretch fig-align="center" width="45%"}
+![](images/t5-codec-comparison.png){.fragment .nostretch fig-align="center" width="40%"}
 
 - As we will see later, even though **DAC** has the best reconstruction, it does **not** perform well downstream
 

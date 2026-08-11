@@ -32,7 +32,7 @@ $$
 - Much more **versatile** than single-codebook VQ
 
 ::: {.fragment style="text-align: center;"}
-![](images/rvq-arch.png){height="420px"}
+![](images/rvq-arch.png){height="350px"}
 :::
 
 ## VQ & RVQ — Common Issues
@@ -76,7 +76,7 @@ $$
 - In general $L_i$ can differ per dimension — codebook size is $\prod_{i=1}^{d} L_i$
 
 ::: {.fragment style="text-align: center;"}
-![](images/vq-vs-fsq.png){height="450px"}
+![](images/vq-vs-fsq.png){height="370px"}
 :::
 
 ## VQ vs FSQ — Intuition
@@ -98,7 +98,7 @@ $$
 - **Compression cost**: how hard is it for the model to use this encoding — is codeword usage close to uniform?
 
 ::: {.fragment style="text-align: center;"}
-![](images/fsq-vs-vq-eval.png){height="700px"}
+![](images/fsq-vs-vq-eval.png){height="600px"}
 :::
 
 
@@ -280,12 +280,12 @@ Inference compute scaling — three strategies:
 :::: {.columns}
 ::: {.column width="50%"}
 ::: {.fragment style="text-align: center;"}
-![](images/inworld-sft-params.png){height="500px"}
+![](images/inworld-sft-params.png){height="380px"}
 :::
 :::
 ::: {.column width="50%"}
 ::: {.fragment style="text-align: center;"}
-![](images/inworld-sft-train-loss.png){height="450px"}
+![](images/inworld-sft-train-loss.png){height="340px"}
 :::
 :::
 ::::
