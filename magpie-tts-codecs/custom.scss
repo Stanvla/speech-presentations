@@ -7,6 +7,18 @@ $presentation-heading-font: 'Inter', sans-serif;
 $presentation-font-size-root: 36px;
 
 /*-- scss:rules --*/
+// the "All talks" back-link is navigation only, not part of the printed deck
+.print-pdf .reveal .footer,
+.reveal-print .reveal .footer {
+  display: none !important;
+}
+
+@media print {
+  .reveal .footer {
+    display: none !important;
+  }
+}
+
 .reveal .columns {
   gap: 3em !important;
   margin-bottom: 1.5em;
