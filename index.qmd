@@ -2,9 +2,5 @@
 title: "Presentations"
 ---
 
-## Talks
-
-| Talk | Slides | Handout |
-|------|--------|---------|
-| FSQ, LLaSA & Inworld TTS | [animated](fsq-llasa-inworld/slides.qmd) | [all steps shown](fsq-llasa-inworld/handout.qmd) |
-| Magpie TTS Codecs | [animated](magpie-tts-codecs/slides.qmd) | [all steps shown](magpie-tts-codecs/handout.qmd) |
+- **FSQ, LLaSA & Inworld TTS** — [animated](fsq-llasa-inworld/slides.qmd) · [handout](fsq-llasa-inworld/handout.qmd)
+- **Magpie TTS Codecs** — [animated](magpie-tts-codecs/slides.qmd) · [handout](magpie-tts-codecs/handout.qmd)
