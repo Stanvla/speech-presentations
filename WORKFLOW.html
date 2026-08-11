@@ -191,16 +191,21 @@ _site/magpie-tts-codecs/handout.html   # everything visible at once</code></pre>
 </section>
 <section id="export-to-pdf" class="level2">
 <h2 class="anchored" data-anchor-id="export-to-pdf">Export to PDF</h2>
+<p>Always export the <strong>handout</strong>, not the slides — with <code>fragments: false</code> you get one page per slide instead of one page per animation step. The <code>← All talks</code> footer is hidden automatically in print mode (see <code>custom.scss</code>).</p>
 <p>Option A — built-in print (no extra tools):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Open the deck in browser, then append ?print-pdf to the URL:</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># http://localhost:4848/fsq-llasa-inworld/slides.html?print-pdf</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Then Ctrl/Cmd+P → Save as PDF (set margins to None, enable Background graphics)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Option B — automated via decktape (needs Node.js):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Open the handout, press `e` (or Tools → PDF Export Mode), then Cmd+P → Save as PDF</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># https://stanvla.github.io/speech-presentations/magpie-tts-codecs/handout.html?view=print</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Paper: Manage Custom Sizes → 1920x1080 px, Margins: None, Background graphics: on</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>e</code> shortcut only switches the page into print layout — it does not download anything. You still have to invoke the browser print dialog.</p>
+<p>Option B — automated via decktape (needs Node.js, not currently installed):</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install <span class="at">-g</span> decktape</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render fsq-llasa-inworld/slides.qmd</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">decktape</span> reveal fsq-llasa-inworld/slides.html fsq-llasa-inworld/slides.pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">decktape</span> reveal <span class="at">--size</span> 1920x1080 <span class="dt">\</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  _site/magpie-tts-codecs/handout.html <span class="dt">\</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  _site/magpie-tts-codecs/handout.pdf</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> publish gh-pages <span class="at">--no-render</span>     <span class="co"># --no-render keeps the PDF from being wiped</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Option C — render directly to PDF format (beamer, not revealjs):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render fsq-llasa-inworld/slides.qmd <span class="at">--to</span> pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render magpie-tts-codecs/handout.qmd <span class="at">--to</span> pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This produces a Beamer PDF (LaTeX-based, different layout from slides). Requires a TeX installation (<code>quarto install tinytex</code>).</p>
 </section>
 <section id="key-rules" class="level2">
