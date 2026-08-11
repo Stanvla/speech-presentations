@@ -32,7 +32,7 @@ $$
 - Much more **versatile** than single-codebook VQ
 
 ::: {.fragment style="text-align: center;"}
-![](images/rvq-arch.png){height="480px"}
+![](images/rvq-arch.png){height="420px"}
 :::
 
 ## VQ & RVQ — Common Issues

@@ -17,7 +17,7 @@
 
 # Recap {background-color="#2d4059"}
 
-## Multi-Receptive Field Fusion (Hifi-GAN)
+## Multi-Receptive Field Fusion (HiFi-GAN)
 
 ![](images/hifigan-mrf.png){fig-align="center" width="70%"}
 
@@ -51,16 +51,16 @@ for i in range(self.num_upsamples):               # 4 stages, k_u = (16, 16, 4, 
         xs = xs + res
     x = xs / self.num_kernels                     # same shape as x
 ```
-- As the kernel grows, so does the receptive field of the $i$-th residual block.
-- Only `transposed_convs[i]` changes the shape.
-- All $|k_r|$ branches receive the same `x` and are shape-preserving.
+- As the kernel grows, so does the receptive field of the $i$-th residual block
+- Only `transposed_convs[i]` changes the shape
+- All $|k_r|$ branches receive the same `x` and are shape-preserving
 
 ## Waveform Discriminators
 
 ![](images/msd-mpd-discriminators.png){.nostretch fig-align="center" width="55%"}
 
 - **Multi-Scale Discriminator** — different scale, i.e. receptive field: raw audio, ×2 avg-pooled, ×4 avg-pooled
-- **Multi-Period Discriminator** — different periods, usually primes $[2, 3, 5, 7, 11]$, so it can analyse different periodic patterns in the audio
+- **Multi-Period Discriminator** — different periods, usually primes $[2, 3, 5, 7, 11]$, so it can analyze different periodic patterns in the audio
 - Usually all discriminators are paired with a **feature matching loss**:
 
   $$\mathcal{L}_{FM}(G) = \mathbb{E}_{(x, s)} \left[ \frac{1}{K} \sum_{k=1}^{K} \frac{1}{T_k} \sum_{i=1}^{T_k} \frac{1}{N_{k,i}} \left\lVert D_k^i(x) - D_k^i(G(s)) \right\rVert_1 \right]$$
@@ -81,13 +81,14 @@ for i in range(self.num_upsamples):               # 4 stages, k_u = (16, 16, 4, 
 # Spectral Codec {background-color="#2d4059"}
 
 ## Spectral Codec — Outline
+
 ![](images/spectral-codec-arch.png){fig-align="center" width="80%"}
 
 - Operates on **mel spectrograms** rather than raw waveforms; compares RVQ vs FSQ quantization
 - Evaluates downstream TTS quality with both AR and NAR FastPitch variants
 - Adopts **group quantization** (HiFi-Codec): partition the latent into groups, quantize each independently
 - **44.1 kHz HiFi-GAN** vocoder as the waveform decoder
-- **86.1 tokens/s** across 8 parallel codebooks (size 1 k each) → 6.9 kbps
+- **86.1 tokens/s** across 8 parallel codebooks (size 1k each) → 6.9 kbps
 - Training losses: multi-resolution mel spectrogram + multi-resolution log-magnitude STFT
 - Adversarial training: MPD + multi-scale complex STFT discriminator
 
@@ -150,10 +151,10 @@ for i in range(self.num_upsamples):               # 4 stages, k_u = (16, 16, 4, 
 
 - GPT with multiple heads, **4 codebooks**, sequence length $n$
 - The pattern decides how the $4 \times n$ token grid is unrolled into decoding steps
-- **Flattening** — all codebooks serialised → $4n$ steps, slowest but fully autoregressive
+- **Flattening** — all codebooks serialized → $4n$ steps, slowest but fully autoregressive
 - **Parallel** — emit a whole timestep at once → $n$ steps, but codebooks are assumed **independent**
 - **Coarse First** — a **single model**: codebook 1 is generated for the whole sequence first, then the remaining codebooks in parallel → $2n$ steps
-  - **Coarse First** $\neq$ **VALL-E**, which realises the same coarse-to-fine idea with **two models** — AR for codebook 1 + NAR for the rest, in $n + (4 - 1)$ steps
+  - **Coarse First** $\neq$ **VALL-E**, which realizes the same coarse-to-fine idea with **two models** — AR for codebook 1 + NAR for the rest, in $n + (4 - 1)$ steps
 - **Delay** — keeps RVQ's dependency (codebook $i$ conditioned on $i-1$) by **offsetting codebook $i$ by $i-1$ steps**
   - each step is predicted sequentially in the codebook dimension *and* in time, producing the diagonal stripes
   - a single model, $n + (4 - 1)$ steps
@@ -162,12 +163,12 @@ for i in range(self.num_upsamples):               # 4 stages, k_u = (16, 16, 4, 
 
 ![](images/musicgen-other-patterns.png){.nostretch fig-align="center" width="65%"}
 
-- **Partial Flattening** — a reorganised Coarse First pattern: after the first codebook, all remaining codebooks are predicted in the **next single step**
+- **Partial Flattening** — a reorganized Coarse First pattern: after the first codebook, all remaining codebooks are predicted in the **next single step**
 - **Partial Delay** — Delay + Parallel patterns: after the first codebook, the rest are predicted **in parallel** (Moshi)
 
 <div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
-Except for the Parallel pattern, the model input at time $t$ is **not** the audio representation at $(t-1)$ — it is simply the **sum of the previous predictions** at $t-1$, according to the pattern. For the Delay pattern:
+Except for the Parallel pattern, the model input at time $t$ is **not** the audio representation at $t$ — it is simply the **sum of the previous predictions** at $t-1$, according to the pattern. For the Delay pattern:
 
 $$X_{t+1} = \text{emb}_1\big(q_{t,\,1}\big) + \text{emb}_2\big(q_{t-1,\,2}\big) + \dots + \text{emb}_K\big(q_{t-K+1,\,K}\big)$$
 
@@ -196,7 +197,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 - This allows training **without any alignment information**, but the learned alignment is **unconstrained** and may not be strictly **monotonic**
 - Non-monotonicity causes various errors — **word skipping**, **repetition**, even **infinite silence** — making models unreliable for production
 - The issue becomes more visible on **complex inputs** (e.g. repeated words)
-- **Defaults:** Pretrained Encoder-Decoder T5-TTS model with the **Spectral Codec**, 1.8k hours of English
+- **Defaults:** pretrained encoder–decoder T5-TTS model with the **Spectral Codec**, 1.8k hours of English
 - Trained on **triples** — (text to generate, audio prompt, audio to generate); unlike other approaches, the **transcript of the audio prompt is not used**
 - **Paper contributions:**
   - **Alignment techniques** that guide cross-attention towards monotonic alignment
@@ -217,7 +218,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 - **Schedule:** for the first $S_1$ steps simply multiply cross-attention by the prior, then over the next $S_2$ steps **anneal** it towards a matrix of all ones
 
 - **Observation:** the CTC loss formulation allows all possible **monotonic alignments** to be considered
-- Given that the audio token sequence is longer than the text token sequence, the CTC loss can be computed on **all cross-attention matrices** → penalising the model for **non-monotonic** attention
+- Given that the audio token sequence is longer than the text token sequence, the CTC loss can be computed on **all cross-attention matrices** → penalizing the model for **non-monotonic** attention
 
   $$\mathcal{L}_{\text{align}} = \text{CTCLoss}\big(\log A,\; y\big), \qquad A \in \mathbb{R}^{T \times N}$$
 
@@ -234,8 +235,8 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
 ![](images/t5-ablations.png){.nostretch fig-align="center" width="45%"}
 
-- Authors experimented with **where to place the audio prompt**: encoder or decoder
-- There is no version with $\mathcal{L}_{align}$ (CTC loss) but **without the prior** — results were **unintelligible**, even though the attention was monotonic
+- The authors experimented with **where to place the audio prompt**: encoder or decoder
+- There is no version with $\mathcal{L}_{\text{align}}$ (CTC loss) but **without the prior** — results were **unintelligible**, even though the attention was monotonic
 
 ![](images/t5-codec-comparison.png){.fragment .nostretch fig-align="center" width="45%"}
 
@@ -247,7 +248,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
 - For the baselines the authors took **pretrained models with official checkpoints**
 - **WER evaluation** — 100 **challenging texts** and 2 **seen speakers** (male and female)
-- **MOS evaluation** — 100 sentences from the **Harvard Sentences**, each audio rated by at least **10 listeners** → **2 k** evaluations per model
+- **MOS evaluation** — 100 sentences from the **Harvard Sentences**, each audio rated by at least **10 listeners** → **2k** evaluations per model
 
 # Low Frame Rate Codec {background-color="#2d4059"}
 
@@ -267,7 +268,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
 <div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
-**LSFC Encoder:** HiFi-GAN **MRF** blocks with **dilation rate 1**, each followed by a strided **1D conv** for downsampling → strides mirror the decoder's upsampling
+**LFSC Encoder:** HiFi-GAN **MRF** blocks with **dilation rate 1**, each followed by a strided **1D conv** for downsampling → strides mirror the decoder's upsampling
 
 </div>
 
@@ -290,7 +291,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
 ![](images/lfsc-tts-results.png){.nostretch fig-align="center" width="70%"}
 
-- Encoder–decoder **T5-TTS** trained on **1.8 k hours** of English
+- Encoder–decoder **T5-TTS** trained on **1.8k hours** of English
 - **RVQ** uses a **delay pattern**; the Spectral Codec and LFSC are predicted **in parallel**
 - Much better than the baselines, and also beats the **4032**-level FSQ variant
 
@@ -314,7 +315,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
   - Different **dilation rates** in the encoder
   - Experiments with **causality** in the encoder and decoder by switching to **causal convolutions**
   - Replaces the complex **MS-STFT** discriminator with a **multi-band MS-STFT** discriminator
-  - Adds a **speaker consistency loss** — maximise the cosine similarity between speaker embeddings of the real and reconstructed audio:
+  - Adds a **speaker consistency loss** — maximize the cosine similarity between speaker embeddings of the real and reconstructed audio:
 
     $$\mathcal{L}_{SC} = -\frac{\alpha}{N} \sum_{n=1}^{N} \cos\left(\phi(x_n),\; \phi(\hat{x}_n)\right) = -\frac{\alpha}{N} \sum_{n=1}^{N} \frac{\phi(x_n) \cdot \phi(\hat{x}_n)}{\lVert \phi(x_n) \rVert_2 \, \lVert \phi(\hat{x}_n) \rVert_2}$$
 
@@ -328,14 +329,14 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 - The **partially causal** model is a good trade-off and better suited to downstream TTS — the only version used from then on
 - **6.25 fps** performs poorly; between **12.5** and **25 fps** the authors keep **12.5 fps**, since it is comparable on CER, SECS and SQMOS
 - Bitrate reduction (smaller codebooks) is **strongly correlated** with worse CER and SECS
-- Finally, **12.5 fps with more FSQ layers** vs **21.5 fps with fewer layers** turn out comparable on all metrics
+- Finally, **12.5 fps with more FSQ layers** vs **21.5 fps with fewer layers** turn out to be comparable on all metrics
 
 ## Nano Codec — Zero-Shot TTS Results
 
 ![](images/nano-codec-tts-results.png){.nostretch fig-align="center" width="80%"}
 
-- **Koel-TTS** — encoder–decoder TTS similar to T5, trained with **CFG** but without **DPO** (RL); a separate model is trained per codec on **18 k hours** of English
-- Results are **better or comparable to the LFSC** with a much smaller latency (**TTFA**)
+- **Koel-TTS** — encoder–decoder TTS similar to T5, trained with **CFG** but without **DPO** (RL); a separate model is trained per codec on **18k hours** of English
+- Results are **better than or comparable to the LFSC**, with much lower latency (**TTFA**)
 - Visible **speaker similarity gap** between **12.5** and **21.5 fps** — interesting observation that at a lower frame rate the prompt is shorter, which itself hurts speaker similarity
 
 
