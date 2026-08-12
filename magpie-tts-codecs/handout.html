@@ -232,18 +232,18 @@ Vladislav Stankov
 <section id="magpie-tts-overview" class="slide level2">
 <h2>Magpie TTS — Overview</h2>
 <ul>
-<li>NVIDIA’s state-of-the-art <strong>multilingual TTS</strong> system, built on the <a href="https://github.com/NVIDIA-NeMo/Speech">NeMo Speech</a> framework</li>
+<li>NVIDIA’s state-of-the-art multilingual TTS system, built on the <a href="https://github.com/NVIDIA-NeMo/Speech">NeMo Speech</a> framework</li>
 <li><strong>Neural audio codec</strong> — <a href="https://huggingface.co/nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps">NanoCodec</a> — decodes those tokens into high-fidelity audio</li>
 <li><strong>5 English speakers and 12 languages:</strong> Arabic, Chinese, English, French, German, Hindi, Italian, Japanese, Korean, Portuguese, Spanish, Vietnamese</li>
-<li>Predicts discrete codec tokens <strong>autoregressively</strong> with a <strong>transformer encoder–decoder</strong></li>
+<li>Predicts discrete codec tokens autoregressively with a <strong>transformer encoder–decoder</strong></li>
 <li>Innovations and tricks:
 <ul>
 <li><strong>Frame stacking</strong> (factor 2) — two codec frames per decoder step</li>
 <li><strong>Local transformer</strong> — fine-grained refinement within a stacked frame</li>
 <li><strong>Auxiliary CTC loss</strong> on the cross-attention matrix to enforce monotonic alignment</li>
 <li><strong>Attention priors</strong> — a diagonal prior biases text↔︎audio cross-attention early in training</li>
-<li><strong>Classifier-free guidance (CFG)</strong> — drop text and prompt in training, modify logits at inference</li>
-<li><strong>Group Relative Policy Optimization (GRPO)</strong> — RL post-training, group mean replaces the critic</li>
+<li><strong>Classifier-free guidance (CFG)</strong> — drop conditioning during training, modify logits at inference — significantly improves speaker similarity and intelligibility</li>
+<li><strong>Group Relative Policy Optimization (GRPO)</strong> — RL post-training</li>
 </ul></li>
 <li>Weights and demo: <a href="https://huggingface.co/nvidia/magpie_tts_multilingual_357m">nvidia/magpie_tts_multilingual_357m</a></li>
 </ul>
@@ -253,13 +253,13 @@ Vladislav Stankov
 <h1>Recap</h1>
 
 </section>
-<section id="multi-receptive-field-fusion-hifi-gan" class="slide level2">
-<h2>Multi-Receptive Field Fusion (HiFi-GAN)</h2>
+<section id="multi-receptive-field-fusion-hifi-gan-decoder" class="slide level2">
+<h2>Multi-Receptive Field Fusion (HiFi-GAN Decoder)</h2>
 
-<img data-src="images/hifigan-mrf.png" class="quarto-figure quarto-figure-center r-stretch" style="width:70.0%"><ul>
+<img data-src="images/hifigan-mrf.png" class="quarto-figure quarto-figure-center r-stretch" style="width:60.0%"><ul>
 <li><strong>Multi-Receptive Field Fusion</strong>: models patterns of various lengths — one dedicated residual block per “length”, returning the <strong>sum</strong> of all residual blocks</li>
-<li><strong>Residual block <span class="math inline">i</span></strong> is specified by kernel size <span class="math inline">k_r[i]</span> and dilation rates <span class="math inline">D_r[i]</span></li>
 <li>Upsample sizes <span class="math inline">k_u = (16, 16, 4, 4)</span> — each <span class="math inline">k_u[i]</span> upsampling layer is followed by its own MRF, and every such MRF contains the same <span class="math inline">|k_r|</span> residual blocks</li>
+<li><strong>Residual block <span class="math inline">i</span></strong> is specified by kernel size <span class="math inline">k_r[i]</span> and dilation rates <span class="math inline">D_r[i]</span></li>
 <li>Residual kernels <span class="math inline">k_r = (3, 7, 11)</span> and dilation rates <span class="math inline">D_r = ((1,1), (3,1), (5,1)) \times 3</span> — note that <span class="math inline">|k_r| = |D_r|</span></li>
 <li>E.g. <span class="math inline">n = 1</span> → <span class="math inline">k_r[n] = 7</span> and <span class="math inline">D_r[n] = ((1,1), (3,1), (5,1))</span>; for each dilation tuple we perform <strong>2 convolutions in a row</strong></li>
 </ul>
@@ -297,8 +297,8 @@ Vladislav Stankov
 </figure>
 </div>
 <ul>
-<li><p><strong>Multi-Scale Discriminator</strong> — different scale, i.e.&nbsp;receptive field: raw audio, ×2 avg-pooled, ×4 avg-pooled</p></li>
-<li><p><strong>Multi-Period Discriminator</strong> — different periods, usually primes <span class="math inline">[2, 3, 5, 7, 11]</span>, so it can analyze different periodic patterns in the audio</p></li>
+<li><p><strong>Multi-Scale Discriminator</strong> — different receptive fields: raw audio, ×2 and ×4 avg-pooled (HiFi-GAN, MelGAN)</p></li>
+<li><p><strong>Multi-Period Discriminator</strong> — different periods, usually primes <span class="math inline">[2, 3, 5, 7, 11]</span>, so it can analyze different periodic patterns in the audio (HiFi-GAN)</p></li>
 <li><p>Usually all discriminators are paired with a <strong>feature matching loss</strong>:</p>
 <p><span class="math display">\mathcal{L}_{FM}(G) = \mathbb{E}_{(x, s)} \left[ \frac{1}{K} \sum_{k=1}^{K} \frac{1}{T_k} \sum_{i=1}^{T_k} \frac{1}{N_{k,i}} \left\lVert D_k^i(x) - D_k^i(G(s)) \right\rVert_1 \right]</span></p>
 <p>where <span class="math inline">D_k^i</span> are the layer-<span class="math inline">i</span> features of discriminator <span class="math inline">k</span> and <span class="math inline">N_{k,i}</span> their element count</p></li>
@@ -312,13 +312,13 @@ Vladislav Stankov
 </figure>
 </div>
 <ul>
-<li><strong>Multi-Scale STFT Discriminator</strong> — processes audio with STFTs of different window lengths <span class="math inline">[2048, 1024, 512, 256, 128]</span>, hop size derived from the window size</li>
+<li><strong>Multi-Scale STFT Discriminator</strong> — processes audio with STFTs of different window lengths <span class="math inline">[2048, 1024, 512, 256, 128]</span>, hop size derived from the window size (EnCodec)</li>
 <li><strong>Phases are also used</strong> (complex part) — bad phase makes the sound less crispy; complex values are just <strong>concatenated</strong>, not a second channel</li>
 <li>Other variations:
 <ul>
-<li><strong>Multi-Resolution Discriminator (MRD)</strong> — same STFT resolutions, but magnitude only, phase ignored</li>
-<li><strong>Multi-Scale Mel Discriminator</strong> — better for human perception, ignores phase</li>
-<li><strong>Multiple bands</strong> — adds another dimension, frequency bands, so each discriminator only looks at specific frequencies</li>
+<li><strong>Multi-Resolution Discriminator (MRD)</strong> — same STFT resolutions, magnitude only (UnivNet, BigVGAN, Vocos)</li>
+<li><strong>Multi-Scale Mel Discriminator</strong> — better for human perception, ignores phase (DAC)</li>
+<li><strong>Multiple bands</strong> — adds another dimension, frequency bands, so each discriminator only looks at specific frequencies (DAC, WavTokenizer)</li>
 </ul></li>
 </ul>
 </section></section>
@@ -330,9 +330,9 @@ Vladislav Stankov
 <section id="spectral-codec-outline" class="slide level2">
 <h2>Spectral Codec — Outline</h2>
 
-<img data-src="images/spectral-codec-arch.png" class="quarto-figure quarto-figure-center r-stretch" style="width:80.0%"><ul>
+<img data-src="images/spectral-codec-arch.png" class="quarto-figure quarto-figure-center r-stretch" style="width:70.0%"><ul>
 <li>Operates on <strong>mel spectrograms</strong> rather than raw waveforms; compares RVQ vs FSQ quantization</li>
-<li>Evaluates downstream TTS quality with both AR and NAR FastPitch variants</li>
+<li>Evaluates downstream TTS quality with AR and NAR FastPitch variants</li>
 <li>Adopts <strong>group quantization</strong> (HiFi-Codec): partition the latent into groups, quantize each independently</li>
 <li><strong>44.1 kHz HiFi-GAN</strong> vocoder as the waveform decoder</li>
 <li><strong>86.1 tokens/s</strong> across 8 parallel codebooks (size 1k each) → 6.9 kbps</li>
@@ -347,7 +347,7 @@ Vladislav Stankov
 <p><span style="font-size: 1.3em; font-weight: 700;">Spectral Variant</span></p>
 <ul>
 <li><strong>Asymmetric</strong>: mel spectrogram input → latent dim 32 (FSQ) or 128 (RVQ)</li>
-<li><strong>FSQ</strong>: 8 parallel codebooks, each quantizing 4 dims into <span class="math inline">[8, 5, 5, 5]</span> levels</li>
+<li><strong>FSQ</strong>: 8 parallel codebooks, each quantizing 4 dims into <span class="math inline">[8, 5, 5, 5]</span> levels - 1k values per codebook</li>
 <li><strong>RVQ</strong>: 8 codebooks of size 1024</li>
 </ul>
 </div>
@@ -371,11 +371,12 @@ Vladislav Stankov
 <section id="spectral-codec-results" class="slide level2">
 <h2>Spectral Codec — Results</h2>
 
-<img data-src="images/spectral-codec-results.png" class="quarto-figure quarto-figure-center r-stretch"><ul>
+<img data-src="images/spectral-codec-results.png" class="quarto-figure quarto-figure-center r-stretch" style="width:70.0%"><ul>
 <li><strong>Upper bound</strong>: HiFi-GAN without quantization (oracle reconstruction)</li>
-<li>Spectral codecs excel on spectrogram-based metrics; waveform codecs on waveform-based</li>
-<li>RVQ vs FSQ downstream comparison is unfair: RVQ uses parallel prediction heads</li>
-<li>Discrete pipeline (FastPitch → codec decoder) <strong>outperforms</strong> the classic continuous baseline</li>
+<li>Spectral codecs excel on mel spectrogram-based metrics; waveform codecs on waveform-based</li>
+<li>⚠️ RVQ vs FSQ downstream comparison is unfair: RVQ uses parallel prediction heads</li>
+<li><strong>NAR</strong> performance on the <strong>spectral</strong> variants is significantly better than on the <strong>waveform</strong> ones</li>
+<li>Discrete pipeline (FastPitch → codec decoder) <strong>outperforms</strong> the classic continuous baseline (oversmoothing)</li>
 </ul>
 </section></section>
 <section>
@@ -416,7 +417,7 @@ Vladislav Stankov
 <li><strong>Partial Delay</strong> — Delay + Parallel patterns: after the first codebook, the rest are predicted <strong>in parallel</strong> (Moshi)</li>
 </ul>
 <div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
-<p>Except for the Parallel pattern, the model input at time <span class="math inline">t</span> is <strong>not</strong> the audio representation at <span class="math inline">t</span> — it is simply the <strong>sum of the previous predictions</strong> at <span class="math inline">t-1</span>, according to the pattern. For the Delay pattern:</p>
+<p>Except for the Parallel pattern, the model input at time <span class="math inline">t</span> is <strong>not</strong> the audio representation at <span class="math inline">t-1</span> — it is simply the <strong>sum of the previous predictions</strong> at <span class="math inline">t-1</span>, according to the pattern. For the Delay pattern:</p>
 <p><span class="math display">X_{t+1} = \text{emb}_1\big(q_{t,\,1}\big) + \text{emb}_2\big(q_{t-1,\,2}\big) + \dots + \text{emb}_K\big(q_{t-K+1,\,K}\big)</span></p>
 <p>Whether head <span class="math inline">k</span> is <strong>active</strong> at time <span class="math inline">t</span> also depends on the pattern — inactive heads contribute a special token instead of a prediction.</p>
 </div>
@@ -517,7 +518,7 @@ Vladislav Stankov
 </figure>
 </div>
 <ul>
-<li>For the baselines the authors took <strong>pretrained models with official checkpoints</strong></li>
+<li>⚠️ For the baselines the authors took <strong>pretrained models with official checkpoints</strong></li>
 <li><strong>WER evaluation</strong> — 100 <strong>challenging texts</strong> and 2 <strong>seen speakers</strong> (male and female)</li>
 <li><strong>MOS evaluation</strong> — 100 sentences from the <strong>Harvard Sentences</strong>, each audio rated by at least <strong>10 listeners</strong> → <strong>2k</strong> evaluations per model</li>
 </ul>
@@ -534,7 +535,7 @@ Vladislav Stankov
 <ul>
 <li><strong>FSQ</strong> quantization with <strong>8 parallel codebooks</strong></li>
 <li><strong>HiFi-GAN</strong> waveform decoder</li>
-<li>Retains the same adversarial <strong>discriminators</strong></li>
+<li>Retains the same adversarial <strong>discriminators</strong> (MPD + multi-scale complex STFT)</li>
 </ul></li>
 <li><strong>Key modifications:</strong>
 <ul>
@@ -591,7 +592,7 @@ Vladislav Stankov
 <p><strong>Reconstruction quality is not fully aligned with TTS quality</strong></p>
 <ul>
 <li><strong>FSQ 4032</strong> reconstructs well but performs worse downstream</li>
-<li>The strongest <strong>DAC</strong> model is only good at reconstruction — it was never optimized for TTS</li>
+<li>The strongest <strong>DAC</strong> model (<strong>44.1 kHz</strong>) is only good at reconstruction — it was never optimized for TTS</li>
 </ul>
 </div>
 </section></section>
@@ -607,7 +608,7 @@ Vladislav Stankov
 <ul>
 <li><p><strong>Snake activation</strong> instead of LeakyReLU</p></li>
 <li><p>Different <strong>dilation rates</strong> in the encoder</p></li>
-<li><p>Experiments with <strong>causality</strong> in the encoder and decoder by switching to <strong>causal convolutions</strong></p></li>
+<li><p>Experiments with <strong>causality</strong> in the encoder and decoder by switching to causal convolutions</p></li>
 <li><p>Replaces the complex <strong>MS-STFT</strong> discriminator with a <strong>multi-band MS-STFT</strong> discriminator</p></li>
 <li><p>Adds a <strong>speaker consistency loss</strong> — maximize the cosine similarity between speaker embeddings of the real and reconstructed audio:</p>
 <p><span class="math display">\mathcal{L}_{SC} = -\frac{\alpha}{N} \sum_{n=1}^{N} \cos\left(\phi(x_n),\; \phi(\hat{x}_n)\right) = -\frac{\alpha}{N} \sum_{n=1}^{N} \frac{\phi(x_n) \cdot \phi(\hat{x}_n)}{\lVert \phi(x_n) \rVert_2 \, \lVert \phi(\hat{x}_n) \rVert_2}</span></p>
