@@ -4,6 +4,9 @@ _site/
 *.html
 WORKFLOW.md
 
+# source papers (page scans / annotated PDFs), not part of the decks
+done-papers/
+
 # OS
 .DS_Store
 Thumbs.db
