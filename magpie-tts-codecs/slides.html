@@ -598,6 +598,232 @@ Vladislav Stankov
 </div>
 </section></section>
 <section>
+<section id="koel-tts" class="title-slide slide level1 center" data-background-color="#2d4059">
+<h1>Koel-TTS</h1>
+
+</section>
+<section id="koel-tts-overview" class="slide level2">
+<h2>Koel-TTS — Overview</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="images/koel-tts-architecture.png" class="quarto-figure quarto-figure-center" style="width:60.0%"></p>
+</figure>
+</div>
+<ul>
+<li class="fragment">Encoder–decoder TTS with <strong>LFSC</strong> (trained on triples) similar to <strong>T5-TTS</strong>, two main contributions:
+<ul>
+<li class="fragment"><strong>Classifier-Free Guidance (CFG)</strong></li>
+<li class="fragment"><strong>Preference alignment</strong> via <strong>Direct Preference Optimization (DPO)</strong> or <strong>Reward-aware Preference Optimization (RPO)</strong></li>
+</ul></li>
+<li class="fragment">Inherits the alignment recipe: <strong>beta-binomial attention prior</strong> and the <strong>CTC alignment loss</strong>.</li>
+<li class="fragment">Three architecture variants compared:
+<ul>
+<li class="fragment"><strong>Decoder Context</strong> — context audio tokens prepended in the decoder</li>
+<li class="fragment"><strong>SV Conditioned</strong> — speaker embedding from a <strong>Speaker Verification (SV)</strong> model + encoder output</li>
+<li class="fragment"><strong>Multi Encoder</strong> — separate NAR encoder for context audio</li>
+</ul></li>
+<li class="fragment">🇬🇧 <strong>18k</strong> h + multilingual CML data: 🇩🇪 1.5k h, 🇳🇱 642 h, 🇪🇸 476 + 42 h, 🇫🇷 283 h, 🇮🇹 131 h</li>
+</ul>
+</section>
+<section id="koel-tts-architecture-comparison" class="slide level2">
+<h2>Koel-TTS — Architecture Comparison</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="images/koel-tts-architecture-baselines.png" class="quarto-figure quarto-figure-center" style="width:65.0%"></p>
+</figure>
+</div>
+<ul>
+<li class="fragment">Baselines <strong>without</strong> CFG or preference alignment, English seen and unseen speakers</li>
+<li class="fragment">All three variants reach <strong>similar intelligibility</strong> (CER / WER) — they differ in <strong>speaker similarity</strong></li>
+<li class="fragment"><strong>Decoder Context</strong> is the best on <strong>unseen</strong> speakers → generalizes better, the choice for <strong>zero-shot</strong> TTS and for the multilingual experiments</li>
+<li class="fragment"><strong>Multi Encoder</strong> is the best on <strong>seen</strong> speakers but consistently the worst on unseen ones → <strong>overfits to the training speakers</strong></li>
+<li class="fragment"><strong>SV Conditioned</strong> matches Decoder Context on SSIM, but perceptually captures the <strong>style</strong> of the context audio worse</li>
+</ul>
+</section>
+<section id="classifier-free-guidance-cfg" class="slide level2">
+<h2>Classifier-Free Guidance (CFG)</h2>
+<ul>
+<li class="fragment"><p><strong>Training:</strong> randomly drop the A+T conditioning with some probability — the model learns both <strong>conditional</strong> and <strong>unconditional</strong> generation paths</p></li>
+<li class="fragment"><p><strong>Inference</strong> is autoregressive, token by token — at <strong>each step</strong> we run <strong>two forward passes</strong>:</p>
+<ol type="1">
+<li class="fragment"><strong>Conditioned</strong> — full input (A+T conditioning + previously generated tokens) → <span class="math inline">\ell_c</span></li>
+<li class="fragment"><strong>Unconditional</strong> — A+T conditioning replaced by mask tokens → <span class="math inline">\ell_u</span></li>
+</ol></li>
+<li class="fragment"><p>Sample the next token from the <strong>interpolated logits</strong>:</p>
+<p><span class="math display">\ell = \gamma \cdot \ell_c + (1 - \gamma) \cdot \ell_u</span></p>
+<p>where <span class="math inline">\gamma</span> is the <strong>guidance scale</strong>; <span class="math inline">\gamma &gt; 1</span> <strong>amplifies</strong> the conditioning signal</p></li>
+</ul>
+<div class="wrapfig" style="width: 55%;">
+<p><img data-src="images/koel-tts-cfg-diagram.png" class=""></p>
+</div>
+<ul>
+<li class="fragment">The sampled token becomes part of the context for the next step in <strong>both models</strong> (teacher-forced with its own predictions)</li>
+</ul>
+</section>
+<section id="cfg-sweep" class="slide level2">
+<h2>CFG Sweep</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="images/koel-tts-cfg-scale.png" class="quarto-figure quarto-figure-center" style="width:70.0%"></p>
+</figure>
+</div>
+<ul>
+<li class="fragment">Increasing <span class="math inline">\gamma</span> significantly reduces <strong>CER</strong> (Character Error Rate, via an <strong>ASR</strong> model) and increases <strong>SSIM</strong> (Speaker SIMilarity, cosine similarity of speaker embeddings via an SV model, unseen speakers)</li>
+<li class="fragment">Optimal <span class="math inline">\gamma = 2.5</span>; <strong>Decoder Context</strong> benefits the most</li>
+<li class="fragment">CFG on a <strong>preference-aligned</strong> model gives the best results — the two techniques are <strong>additive</strong></li>
+</ul>
+</section>
+<section id="preference-data-pipeline" class="slide level2">
+<h2>Preference Data Pipeline</h2>
+<ul>
+<li class="fragment"><strong>800 challenging texts</strong> (tongue twisters, repeated words, numbers) + regular training texts</li>
+<li class="fragment">Pair each text with context audios from training data → generate <span class="math inline">P</span> samples per (text, speaker) → rank using <strong>ASR</strong> (CER ↓) and <strong>SV</strong> (SSIM ↑) models → <strong>Pareto ranking</strong> → chosen <span class="math inline">y_c</span> and rejected <span class="math inline">y_l</span></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="images/koel-tts-preference-pipeline.png" class="quarto-figure quarto-figure-center" style="width:70.0%"></p>
+</figure>
+</div>
+<div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
+<p><strong>On-policy data is critical</strong></p>
+<ul>
+<li>Using <strong>ground-truth audio as chosen</strong> (SpeechAlign) causes model degeneration — the preference loss drops to nearly zero within a few hundred iterations, CER <strong>&gt;90%</strong></li>
+<li>DPO with early stopping prevents degeneration but yields <strong>no improvement</strong> over the baseline</li>
+<li>Chosen and rejected samples <strong>must come from the model’s own output distribution</strong></li>
+</ul>
+</div>
+</section>
+<section id="pareto-ranking" class="slide level2">
+<h2>Pareto Ranking</h2>
+<ul>
+<li class="fragment"><p>Sample <span class="math inline">A</span> is <strong>dominated</strong> by <span class="math inline">B</span> if <span class="math inline">B</span> is <strong>at least as good on both</strong> metrics and <strong>not identical</strong> — i.e.&nbsp;no sample is strictly better on one metric and equally good or better on the other</p></li>
+<li class="fragment"><p><strong>Pareto front</strong> = all non-dominated samples → assign them the current rank, <strong>remove</strong> them, repeat on the remainder → next front, and so on until every sample is ranked</p></li>
+<li class="fragment"><p>Within a front, <strong>prioritize lower CER</strong>, breaking remaining ties by <strong>higher SSIM</strong></p></li>
+<li class="fragment"><p><strong>RPO:</strong> pair the <strong>top two with the bottom two</strong> in all combinations (4 pairs), since it handles <strong>scalar reward differences</strong> instead of a binary preference</p></li>
+<li class="fragment"><p>In both cases, <strong>discard</strong> pairs where the chosen sample scores <strong>worse on any metric</strong></p></li>
+</ul>
+</section>
+<section id="dpo-direct-preference-optimization" class="slide level2">
+<h2>DPO — Direct Preference Optimization</h2>
+<ul>
+<li class="fragment"><p>Given input <span class="math inline">x</span> (text + context audio), the <strong>top-ranked</strong> sample as chosen <span class="math inline">y_c</span> and the <strong>bottom-ranked</strong> as rejected <span class="math inline">y_l</span> — high-contrast pairs are empirically beneficial:</p>
+<p><span class="math display">\mathcal{L}_{\text{DPO}} = -\mathbb{E}_{x,\,y_c,\,y_l} \log\sigma\!\left(\beta \left[\log\frac{\pi_\theta(y_c \mid x)}{\pi_{\text{ref}}(y_c \mid x)} - \log\frac{\pi_\theta(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)}\right]\right) = -\mathbb{E}_{x,\,y_c,\,y_l} \log\sigma\!\big(\beta\,\Delta(x, y_c, y_l)\big)</span></p></li>
+<li class="fragment"><p>Here <span class="math inline">\Delta</span> is the log-likelihood ratio gap between chosen and rejected:</p>
+<p><span class="math display">\Delta(x, y_c, y_l) = \big[\log \pi_\theta(y_c \mid x) - \log \pi_{\text{ref}}(y_c \mid x)\big] - \big[\log \pi_\theta(y_l \mid x) - \log \pi_{\text{ref}}(y_l \mid x)\big]</span></p></li>
+<li class="fragment"><p>Each <span class="math inline">\log \pi(y \mid x)</span> is a <strong>single scalar</strong> — one teacher-forced pass, all logits summed (over codebooks within a frame)</p></li>
+<li class="fragment"><p><strong>4 such scalars per pair</strong> — <span class="math inline">\{\pi_\theta, \pi_{\text{ref}}\} \times \{y_c, y_l\}</span> — and <span class="math inline">\pi_{\text{ref}}</span> is <strong>frozen</strong> (the base checkpoint), so its two can be <strong>precomputed</strong>; gradients flow only through <span class="math inline">\pi_\theta</span></p></li>
+<li class="fragment"><p><span class="math inline">\beta</span> controls how far <span class="math inline">\pi_\theta</span> can deviate from <span class="math inline">\pi_{\text{ref}}</span></p></li>
+</ul>
+</section>
+<section id="rpo-reward-aware-preference-optimization" class="slide level2">
+<h2>RPO — Reward-aware Preference Optimization</h2>
+<ul>
+<li class="fragment"><p>DPO only knows <strong>which</strong> sample is better; RPO also knows <strong>by how much</strong> — it compares two preference scores for the same pair:</p>
+<p><span class="math display">\underbrace{s_\theta = \beta\,\Delta(x, y_c, y_l)}_{\text{what the model believes}}, \qquad \underbrace{s^* = \eta\,\Delta r(x, y_c, y_l)}_{\text{what the reward says}}</span></p></li>
+<li class="fragment"><p><strong>Model score</strong> <span class="math inline">s_\theta</span> — the <strong>same log-ratio gap <span class="math inline">\Delta</span> as in DPO</strong>, i.e.&nbsp;how much more <span class="math inline">\pi_\theta</span> prefers <span class="math inline">y_c</span> over <span class="math inline">y_l</span> than the frozen <span class="math inline">\pi_{\text{ref}}</span> does; <span class="math inline">s_\theta &gt; 0</span> means the policy has already shifted toward <span class="math inline">y_c</span></p></li>
+<li class="fragment"><p><strong>Reward score</strong> <span class="math inline">s^*</span> — how much better the ASR + SV metrics say <span class="math inline">y_c</span> actually is, <span class="math inline">\Delta r = r^*(x, y_c) - r^*(x, y_l)</span>, scaled by <span class="math inline">\eta</span> (<span class="math inline">1.0</span> by default)</p></li>
+<li class="fragment"><p>Both scores are <strong>log-odds</strong>: the sigmoid turns each into the probability that “<span class="math inline">y_c</span> is better”</p>
+<p><span class="math display">p_\theta = \sigma(s_\theta) \quad \text{(model's belief)}, \qquad p^* = \sigma(s^*) \quad \text{(reward's belief)}</span></p></li>
+<li class="fragment"><p>Training makes the model’s belief <strong>match</strong> the reward’s belief — minimize <span class="math inline">\text{KL}\big[p^* \,\|\, p_\theta\big]</span>, which turns out to be exactly a <span class="math inline">\text{BCE}</span></p></li>
+<li class="fragment"><p>DPO instead fixes the target at <span class="math inline">1</span> (“<span class="math inline">y_c</span> is better, period”), so it ignores how large the reward gap is</p></li>
+</ul>
+</section>
+<section id="rpo-reward-gap-delta-r" class="slide level2">
+<h2>RPO — Reward Gap <span class="math inline">\Delta r</span></h2>
+<ul>
+<li class="fragment"><p><span class="math inline">r^*</span> is the <strong>ground-truth reward</strong> of a single sample — but RPO only ever uses the <strong>difference</strong> between chosen and rejected, so the paper defines just the gap:</p>
+<p><span class="math display">\Delta r = \Phi\big(\Delta\widetilde{\text{CER}}\big) + \Phi\big(\Delta\widetilde{\text{SSIM}}\big)</span></p></li>
+<li class="fragment"><p>The raw metric gaps are taken <strong>in favor of the chosen</strong> sample (CER is lower-is-better, SSIM higher-is-better):</p>
+<p><span class="math display">\Delta_{\text{CER}} = \text{CER}_l - \text{CER}_c, \qquad \Delta_{\text{SSIM}} = \text{SSIM}_c - \text{SSIM}_l</span></p></li>
+<li class="fragment"><p>Each is then <strong>z-normalized</strong> over all pairs in the dataset, which puts the two very differently-scaled metrics on a common scale:</p>
+<p><span class="math display">\Delta\widetilde{\text{CER}} = \frac{\Delta_{\text{CER}} - \mu_{\text{CER}}}{\sigma_{\text{CER}}} \quad \text{— how many } \sigma \text{ above the average gap this pair is}</span></p></li>
+<li class="fragment"><p><span class="math inline">\Phi</span> (standard normal <strong>CDF</strong>) squashes each z-score into <span class="math inline">(0, 1)</span>: an average gap → <span class="math inline">0.5</span>, a much larger than average gap → close to <span class="math inline">1</span></p></li>
+</ul>
+</section>
+<section id="rpo-from-kl-to-bce" class="slide level2">
+<h2>RPO — From KL to BCE</h2>
+<ul>
+<li class="fragment"><p><span class="math inline">X \in \{0, 1\}</span> is the preference outcome — <span class="math inline">X = 1</span> means <span class="math inline">y_c \succ y_l</span>, <span class="math inline">X = 0</span> means <span class="math inline">y_l \succ y_c</span> — and both <span class="math inline">p^*</span> and <span class="math inline">p_\theta</span> are <strong>Bernoulli</strong> over it:</p>
+<p><span class="math display">P(X;\, p) = p^X (1 - p)^{1 - X} \quad\Rightarrow\quad p(X=1) = \sigma(s), \quad p(X=0) = 1 - \sigma(s)</span></p></li>
+</ul>
+<p><span class="math display">\begin{aligned}
+\text{KL}\big[p^* \,\|\, p_\theta\big]
+&amp;= \sum_{X \in \{0,1\}} p^*(X)\, \log \frac{p^*(X)}{p_\theta(X)}
+\;=\; \underbrace{-\sum_{X \in \{0, 1\}} p^*(X) \log p_\theta(X)}_{H(p^*,\; p_\theta)\ \text{— cross-entropy}}
+\;-\; \underbrace{\Big(\!-\!\sum_{X \in \{0, 1\}} p^*(X) \log p^*(X)\Big)}_{H(p^*)\ \text{— entropy, no } \theta} \\[4pt]
+&amp;= -\,p^*(X=1) \log p_\theta(X=1) \;-\; p^*(X=0) \log p_\theta(X=0) \;+\; \text{const} \\[4pt]
+&amp;= \sigma(s^*)\, \log\frac{1}{\sigma(s_\theta)} \;+\; \big(1 - \sigma(s^*)\big)\, \log\frac{1}{1 - \sigma(s_\theta)} \;+\; \text{const} \\[4pt]
+&amp;= \text{BCE}\big(p^*,\, p_\theta\big) \;+\; \text{const}
+\end{aligned}</span></p>
+<ul>
+<li class="fragment">The target <span class="math inline">p^* = \sigma(\eta\,\Delta r)</span> is a <strong>soft label</strong>, not a hard <span class="math inline">1</span> — a small reward gap pushes the pair apart only weakly, which is why RPO tolerates low-contrast pairs</li>
+<li class="fragment"><strong>DPO is the limiting case</strong> <span class="math inline">p^* \to 1</span>, where the BCE collapses to <span class="math inline">-\log \sigma(\beta\,\Delta)</span></li>
+</ul>
+</section>
+<section id="rpo-reward-design" class="slide level2">
+<h2>RPO — Reward Design</h2>
+<ul>
+<li class="fragment">RPO only needs a <strong>scalar</strong> <span class="math inline">\Delta r</span>, larger when the chosen sample is better — the original RPO takes it from a <strong>learned reward model</strong></li>
+<li class="fragment">Koel-TTS has none, only <strong>CER</strong> (%) and <strong>SSIM</strong> (cosine) — so the previous slide is their <strong>design choice</strong> for putting the two on one scale and adding them (<strong>equal weight</strong>)</li>
+<li class="fragment">What the choice has to get right is <strong>scale</strong>, because <span class="math inline">\sigma</span> saturates: each <span class="math inline">\Phi \in (0, 1)</span> gives <span class="math inline">\Delta r \in (0, 2)</span>, so with <span class="math inline">\eta = 1</span> the target sits in <span class="math inline">p^* \in (0.5, 0.88)</span>
+<ul>
+<li class="fragment">an <strong>unbounded</strong> raw gap would drive <span class="math inline">p^* \to 1</span> and collapse RPO back into DPO</li>
+<li class="fragment"><span class="math inline">p^* = 0.5</span> is <strong>not</strong> “no signal” — it is an instruction to make the two <strong>equally likely</strong></li>
+</ul></li>
+<li class="fragment">Why z-score <strong>then</strong> <span class="math inline">\Phi</span>: for roughly normal gaps this is the <strong>probability integral transform</strong>, so <span class="math inline">\Phi(\Delta\widetilde{m})</span> is roughly <strong>uniform</strong> on <span class="math inline">(0,1)</span> — rewards spread evenly instead of clustering at one end</li>
+<li class="fragment">The price: the reward is <strong>corpus-relative</strong> — global pass for <span class="math inline">\mu, \sigma</span>; shifts if the dataset composition changes</li>
+<li class="fragment">Could be swapped for min–max scaling, <strong>rank-based</strong> rewards or a real reward model (different <span class="math inline">\eta</span>)</li>
+</ul>
+<div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
+<p><strong>DPO is ignorant of the quality gap</strong> and maximizes it for every pair, “unlearning” perfectly good rejected responses; RPO trains the margin to <strong>match</strong> the gap (<span class="math inline">\beta\,\Delta = \eta\,\Delta r</span>)</p>
+</div>
+</section>
+<section id="dpo-rpo-key-findings" class="slide level2">
+<h2>DPO / RPO — Key Findings</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="images/koel-tts-dpo-rpo-table.png" class="quarto-figure quarto-figure-center" style="width:60.0%"></p>
+</figure>
+</div>
+<ul>
+<li class="fragment">Both DPO and RPO <strong>significantly improve</strong> intelligibility (CER, WER) and speaker similarity (SSIM)</li>
+<li class="fragment">Preference alignment improves <strong>zero-shot speaker similarity on unseen speakers</strong>, even though no new speakers appear in the preference data</li>
+<li class="fragment"><strong>RPO is much more stable</strong> — far less sensitive to hyperparameter tuning and to the number of training iterations than DPO, and it works reliably <strong>without high-contrast</strong> pairs</li>
+<li class="fragment">The <strong>GT as Chosen</strong> row is the ablation from the pipeline slide — off-policy chosen samples drop it <strong>below the baseline</strong></li>
+</ul>
+<div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
+<p><strong>CFG and preference alignment are additive</strong> — each helps on its own, and CFG inference on a preference-aligned checkpoint gives the <strong>best results</strong> across metrics</p>
+</div>
+</section>
+<section id="koel-tts-results" class="slide level2">
+<h2>Koel-TTS — Results</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="images/koel-tts-results.png" class="quarto-figure quarto-figure-center" style="width:80.0%"></p>
+</figure>
+</div>
+<ul>
+<li class="fragment"><strong>Left</strong> — the English-only models on <strong>18k</strong> h with <strong>RPO</strong></li>
+<li class="fragment"><strong>Right</strong> — the <strong>1.1B</strong> multilingual Decoder Context model with <strong>DPO</strong> : 🇬🇧 18k h, 🇩🇪 1.5k h, 🇳🇱 642 h, 🇪🇸 476 h + 42 h, 🇫🇷 283 h, 🇮🇹 131 h → a <strong>21k</strong> h</li>
+<li class="fragment">Tokenizer: <strong>phonemes + per-lang chars</strong> (<span class="math inline">256 \times K</span>), trained and inferred on both (phonemes only 🇬🇧 🇪🇸 🇩🇪)</li>
+<li class="fragment"><strong>Appendix D:</strong> <strong>shared chars</strong> on par, <strong>sentencepiece</strong> (110k, but encoder is from scratch) worst; per-language chars also best <strong>cross-lingually</strong> — own embeddings</li>
+</ul>
+</section>
+<section id="koel-tts-against-the-baselines" class="slide level2">
+<h2>Koel-TTS — Against the Baselines</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="images/koel-tts-baseline-comparison.png" class="quarto-figure quarto-figure-center" style="width:65.0%"></p>
+</figure>
+</div>
+<ul>
+<li class="fragment">Zero-shot, <strong>English only</strong> (unseen speakers, <em>test-clean</em> LibriTTS)</li>
+<li class="fragment"><strong>CER / WER: the winner</strong> — on <strong>21k</strong> h of data vs <strong>100k+</strong> h for F5/E2-TTS</li>
+<li class="fragment"><strong>SSIM:</strong> beats the LLM-based models (VALLE-X, XTTS-v2), slightly below the <strong>flow-matching</strong> ones (F5-TTS, E2-TTS)</li>
+<li class="fragment"><strong>Best on the subjective metrics</strong> (MOS, SMOS) — SSIM favours timbre, humans also weigh style and accent</li>
+</ul>
+</section></section>
+<section>
 <section id="nano-codec" class="title-slide slide level1 center" data-background-color="#2d4059">
 <h1>Nano Codec</h1>
 
