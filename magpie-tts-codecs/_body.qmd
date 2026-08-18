@@ -347,7 +347,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
   where $\gamma$ is the **guidance scale**; $\gamma > 1$ **amplifies** the conditioning signal
 
-::: {.wrapfig style="width: 55%;"}
+::: {.fragment .wrapfig style="width: 55%;"}
 ![](images/koel-tts-cfg-diagram.png){.nostretch}
 :::
 
@@ -366,7 +366,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 - **800 challenging texts** (tongue twisters, repeated words, numbers) + regular training texts
 - Pair each text with context audios from training data → generate $P$ samples per (text, speaker) → rank using **ASR** (CER ↓) and **SV** (SSIM ↑) models → **Pareto ranking** → chosen $y_c$ and rejected $y_l$
 
-![](images/koel-tts-preference-pipeline.png){.nostretch fig-align="center" width="70%"}
+![](images/koel-tts-preference-pipeline.png){.fragment .nostretch fig-align="center" width="70%"}
 
 <div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
@@ -442,6 +442,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
   $$P(X;\, p) = p^X (1 - p)^{1 - X} \quad\Rightarrow\quad p(X=1) = \sigma(s), \quad p(X=0) = 1 - \sigma(s)$$
 
+::: {.fragment}
 $$\begin{aligned}
 \text{KL}\big[p^* \,\|\, p_\theta\big]
 &= \sum_{X \in \{0,1\}} p^*(X)\, \log \frac{p^*(X)}{p_\theta(X)}
@@ -451,6 +452,7 @@ $$\begin{aligned}
 &= \sigma(s^*)\, \log\frac{1}{\sigma(s_\theta)} \;+\; \big(1 - \sigma(s^*)\big)\, \log\frac{1}{1 - \sigma(s_\theta)} \;+\; \text{const} \\[4pt]
 &= \text{BCE}\big(p^*,\, p_\theta\big) \;+\; \text{const}
 \end{aligned}$$
+:::
 
 - The target $p^* = \sigma(\eta\,\Delta r)$ is a **soft label**, not a hard $1$ — a small reward gap pushes the pair apart only weakly, which is why RPO tolerates low-contrast pairs
 - **DPO is the limiting case** $p^* \to 1$, where the BCE collapses to $-\log \sigma(\beta\,\Delta)$
