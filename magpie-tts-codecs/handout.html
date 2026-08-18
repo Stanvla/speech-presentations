@@ -652,7 +652,7 @@ Vladislav Stankov
 <p><span class="math display">\ell = \gamma \cdot \ell_c + (1 - \gamma) \cdot \ell_u</span></p>
 <p>where <span class="math inline">\gamma</span> is the <strong>guidance scale</strong>; <span class="math inline">\gamma &gt; 1</span> <strong>amplifies</strong> the conditioning signal</p></li>
 </ul>
-<div class="wrapfig" style="width: 55%;">
+<div class="fragment wrapfig" style="width: 55%;">
 <p><img data-src="images/koel-tts-cfg-diagram.png" class=""></p>
 </div>
 <ul>
@@ -680,7 +680,7 @@ Vladislav Stankov
 </ul>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/koel-tts-preference-pipeline.png" class="quarto-figure quarto-figure-center" style="width:70.0%"></p>
+<p><img data-src="images/koel-tts-preference-pipeline.png" class="fragment quarto-figure quarto-figure-center" style="width:70.0%"></p>
 </figure>
 </div>
 <div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
@@ -745,6 +745,7 @@ Vladislav Stankov
 <li><p><span class="math inline">X \in \{0, 1\}</span> is the preference outcome — <span class="math inline">X = 1</span> means <span class="math inline">y_c \succ y_l</span>, <span class="math inline">X = 0</span> means <span class="math inline">y_l \succ y_c</span> — and both <span class="math inline">p^*</span> and <span class="math inline">p_\theta</span> are <strong>Bernoulli</strong> over it:</p>
 <p><span class="math display">P(X;\, p) = p^X (1 - p)^{1 - X} \quad\Rightarrow\quad p(X=1) = \sigma(s), \quad p(X=0) = 1 - \sigma(s)</span></p></li>
 </ul>
+<div class="fragment">
 <p><span class="math display">\begin{aligned}
 \text{KL}\big[p^* \,\|\, p_\theta\big]
 &amp;= \sum_{X \in \{0,1\}} p^*(X)\, \log \frac{p^*(X)}{p_\theta(X)}
@@ -754,6 +755,7 @@ Vladislav Stankov
 &amp;= \sigma(s^*)\, \log\frac{1}{\sigma(s_\theta)} \;+\; \big(1 - \sigma(s^*)\big)\, \log\frac{1}{1 - \sigma(s_\theta)} \;+\; \text{const} \\[4pt]
 &amp;= \text{BCE}\big(p^*,\, p_\theta\big) \;+\; \text{const}
 \end{aligned}</span></p>
+</div>
 <ul>
 <li>The target <span class="math inline">p^* = \sigma(\eta\,\Delta r)</span> is a <strong>soft label</strong>, not a hard <span class="math inline">1</span> — a small reward gap pushes the pair apart only weakly, which is why RPO tolerates low-contrast pairs</li>
 <li><strong>DPO is the limiting case</strong> <span class="math inline">p^* \to 1</span>, where the BCE collapses to <span class="math inline">-\log \sigma(\beta\,\Delta)</span></li>
