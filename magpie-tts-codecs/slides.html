@@ -699,6 +699,7 @@ Vladislav Stankov
 <li class="fragment"><p>Sample <span class="math inline">A</span> is <strong>dominated</strong> by <span class="math inline">B</span> if <span class="math inline">B</span> is <strong>at least as good on both</strong> metrics and <strong>not identical</strong> — i.e.&nbsp;no sample is strictly better on one metric and equally good or better on the other</p></li>
 <li class="fragment"><p><strong>Pareto front</strong> = all non-dominated samples → assign them the current rank, <strong>remove</strong> them, repeat on the remainder → next front, and so on until every sample is ranked</p></li>
 <li class="fragment"><p>Within a front, <strong>prioritize lower CER</strong>, breaking remaining ties by <strong>higher SSIM</strong></p></li>
+<li class="fragment"><p><strong>DPO:</strong> take the <strong>first (top) and last (bottom) Pareto fronts</strong> as chosen <span class="math inline">y_c</span> and rejected <span class="math inline">y_l</span></p></li>
 <li class="fragment"><p><strong>RPO:</strong> pair the <strong>top two with the bottom two</strong> in all combinations (4 pairs), since it handles <strong>scalar reward differences</strong> instead of a binary preference</p></li>
 <li class="fragment"><p>In both cases, <strong>discard</strong> pairs where the chosen sample scores <strong>worse on any metric</strong></p></li>
 </ul>
@@ -706,25 +707,67 @@ Vladislav Stankov
 <section id="dpo-direct-preference-optimization" class="slide level2">
 <h2>DPO — Direct Preference Optimization</h2>
 <ul>
-<li class="fragment"><p>Given input <span class="math inline">x</span> (text + context audio), the <strong>top-ranked</strong> sample as chosen <span class="math inline">y_c</span> and the <strong>bottom-ranked</strong> as rejected <span class="math inline">y_l</span> — high-contrast pairs are empirically beneficial:</p>
+<li class="fragment"><p>Given input <span class="math inline">x</span> (text + context audio), with chosen <span class="math inline">y_c</span> and rejected <span class="math inline">y_l</span> — high-contrast pairs are empirically beneficial:</p>
 <p><span class="math display">\mathcal{L}_{\text{DPO}} = -\mathbb{E}_{x,\,y_c,\,y_l} \log\sigma\!\left(\beta \left[\log\frac{\pi_\theta(y_c \mid x)}{\pi_{\text{ref}}(y_c \mid x)} - \log\frac{\pi_\theta(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)}\right]\right) = -\mathbb{E}_{x,\,y_c,\,y_l} \log\sigma\!\big(\beta\,\Delta(x, y_c, y_l)\big)</span></p></li>
 <li class="fragment"><p>Here <span class="math inline">\Delta</span> is the log-likelihood ratio gap between chosen and rejected:</p>
-<p><span class="math display">\Delta(x, y_c, y_l) = \big[\log \pi_\theta(y_c \mid x) - \log \pi_{\text{ref}}(y_c \mid x)\big] - \big[\log \pi_\theta(y_l \mid x) - \log \pi_{\text{ref}}(y_l \mid x)\big]</span></p></li>
+<p><span class="math display">\Delta = \underbrace{\big[\log \pi_\theta(y_c \mid x) - \log \pi_\theta(y_l \mid x)\big]}_{\text{current model: chosen vs rejected}} - \underbrace{\big[\log \pi_{\text{ref}}(y_c \mid x) - \log \pi_{\text{ref}}(y_l \mid x)\big]}_{\text{reference: chosen vs rejected}}</span></p></li>
+<li class="fragment"><p><strong>Intuition:</strong> has my model increased the odds of the chosen response relative to the rejected response, compared with where the reference model started?</p></li>
 <li class="fragment"><p>Each <span class="math inline">\log \pi(y \mid x)</span> is a <strong>single scalar</strong> — one teacher-forced pass, all logits summed (over codebooks within a frame)</p></li>
 <li class="fragment"><p><strong>4 such scalars per pair</strong> — <span class="math inline">\{\pi_\theta, \pi_{\text{ref}}\} \times \{y_c, y_l\}</span> — and <span class="math inline">\pi_{\text{ref}}</span> is <strong>frozen</strong> (the base checkpoint), so its two can be <strong>precomputed</strong>; gradients flow only through <span class="math inline">\pi_\theta</span></p></li>
 <li class="fragment"><p><span class="math inline">\beta</span> controls how far <span class="math inline">\pi_\theta</span> can deviate from <span class="math inline">\pi_{\text{ref}}</span></p></li>
+</ul>
+</section>
+<section id="dpo-where-the-log-ratio-comes-from" class="slide level2">
+<h2>DPO — Where the Log-Ratio Comes From</h2>
+<ul>
+<li class="fragment"><p>The log-ratio isn’t an arbitrary choice — it <strong>drops out of the KL-regularized RLHF objective</strong>:</p>
+<p><span class="math display">\max_{\pi}\; \mathbb{E}_{y \sim \pi}\big[r(x, y)\big] - \beta\, D_{\text{KL}}\!\big(\pi(\cdot \mid x)\,\|\,\pi_{\text{ref}}(\cdot \mid x)\big)</span></p></li>
+<li class="fragment"><p>This objective has a <strong>closed-form optimal policy</strong> derived from the <strong>constrained</strong> problem — maximize subject to <span class="math inline">\sum_y \pi(y \mid x) = 1</span> — with a <strong>Lagrange multiplier</strong>, then setting the gradient with respect to <span class="math inline">\pi</span> to zero:</p>
+<p><span class="math display">\pi^*(y \mid x) = \frac{1}{Z(x)}\,\pi_{\text{ref}}(y \mid x)\,\exp\!\Big(\tfrac{1}{\beta}\, r(x, y)\Big)</span></p></li>
+<li class="fragment"><p>Rearrange and take logs → <strong>solve for the reward</strong>:</p>
+<p><span class="math display">r(x, y) = \beta \log\frac{\pi^*(y \mid x)}{\pi_{\text{ref}}(y \mid x)} + \beta \log Z(x)</span></p></li>
+<li class="fragment"><p><strong>Finally</strong>, apply standard <strong>Bradley–Terry</strong> preference model, where only the <strong>reward difference</strong> matters:</p>
+<p><span class="math display">P(y_c \succ y_l \mid x) = \sigma\!\big(r(x, y_c) - r(x, y_l)\big) = \sigma\!\left(\log\frac{\pi_\theta(y_c \mid x)}{\pi_{\text{ref}}(y_c \mid x)} - \log\frac{\pi_\theta(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)}\right)</span></p>
+<p>the intractable <span class="math inline">\log Z(x)</span> is shared by both terms and <strong>cancels</strong></p></li>
+</ul>
+</section>
+<section id="dpo-optimal-policy-derivation-12" class="slide level2">
+<h2>DPO — Optimal Policy Derivation (1/2)</h2>
+<ul>
+<li class="fragment"><p>For fixed <span class="math inline">x</span>, start from the KL-regularized objective:</p>
+<p><span class="math display">\max_{\pi}\ \sum_y \pi(y \mid x)\, r(x, y) - \beta \sum_y \pi(y \mid x) \log\frac{\pi(y \mid x)}{\pi_{\text{ref}}(y \mid x)}</span></p></li>
+<li class="fragment"><p>With <span class="math inline">\pi_y = \pi(y \mid x)</span>, <span class="math inline">q_y = \pi_{\text{ref}}(y \mid x)</span>, <span class="math inline">r_y = r(x, y)</span>, and a <strong>Lagrange multiplier</strong> enforcing <span class="math inline">\sum_y \pi_y = 1</span>:</p>
+<p><span class="math display">\mathcal{L} = \sum_y \pi_y r_y - \beta \sum_y \pi_y \log\frac{\pi_y}{q_y} + \lambda\Big(\sum_y \pi_y - 1\Big)</span></p></li>
+<li class="fragment"><p><strong>Differentiate</strong> w.r.t. each <span class="math inline">\pi_y</span> and set to zero, using <span class="math inline">\frac{\partial}{\partial \pi_y}\!\big[\pi_y \log\tfrac{\pi_y}{q_y}\big] = \log\tfrac{\pi_y}{q_y} + 1</span>:</p>
+<p><span class="math display">\frac{\partial \mathcal{L}}{\partial \pi_y} = r_y - \beta\Big(\log\frac{\pi_y}{q_y} + 1\Big) + \lambda = 0</span></p></li>
+<li class="fragment"><p><strong>Solve</strong> for the log-ratio and <strong>exponentiate</strong>:</p>
+<p><span class="math display">\log\frac{\pi_y}{q_y} = \frac{r_y}{\beta} + \frac{\lambda}{\beta} - 1 \;\Longrightarrow\; \pi_y = q_y\, e^{r_y/\beta}\, \underbrace{e^{\lambda/\beta - 1}}_{C}</span></p></li>
+</ul>
+</section>
+<section id="dpo-optimal-policy-derivation-22" class="slide level2">
+<h2>DPO — Optimal Policy Derivation (2/2)</h2>
+<ul>
+<li class="fragment"><p>The last factor is <strong>independent of <span class="math inline">y</span></strong> — absorb it into a single normalization constant <span class="math inline">C</span>:</p>
+<p><span class="math display">\pi_y = C\, q_y\, e^{r_y/\beta}</span></p></li>
+<li class="fragment"><p><strong>Enforce</strong> <span class="math inline">\sum_y \pi_y = 1</span> to pin down <span class="math inline">C</span>:</p>
+<p><span class="math display">1 = C \sum_y q_y\, e^{r_y/\beta} \;\Longrightarrow\; C = \frac{1}{\sum_y q_y\, e^{r_y/\beta}}</span></p></li>
+<li class="fragment"><p><strong>Define</strong> the partition function <span class="math inline">Z(x)</span>, so <span class="math inline">C = 1/Z(x)</span>:</p>
+<p><span class="math display">Z(x) = \sum_y \pi_{\text{ref}}(y \mid x)\, e^{r(x, y)/\beta}</span></p></li>
+<li class="fragment"><p>And you recover exactly the policy used above:</p>
+<p><span class="math display">\boxed{\; \pi^*(y \mid x) = \frac{1}{Z(x)}\, \pi_{\text{ref}}(y \mid x)\, \exp\!\Big(\tfrac{1}{\beta}\, r(x, y)\Big) \;}</span></p></li>
 </ul>
 </section>
 <section id="rpo-reward-aware-preference-optimization" class="slide level2">
 <h2>RPO — Reward-aware Preference Optimization</h2>
 <ul>
 <li class="fragment"><p>DPO only knows <strong>which</strong> sample is better; RPO also knows <strong>by how much</strong> — it compares two preference scores for the same pair:</p>
-<p><span class="math display">\underbrace{s_\theta = \beta\,\Delta(x, y_c, y_l)}_{\text{what the model believes}}, \qquad \underbrace{s^* = \eta\,\Delta r(x, y_c, y_l)}_{\text{what the reward says}}</span></p></li>
+<p><span class="math display">\underbrace{s_\theta = \beta\,\Delta(x, y_c, y_l)}_{\text{the model's shift above ref}}, \qquad \underbrace{s^* = \eta\,\Delta r(x, y_c, y_l)}_{\text{what the reward says}}</span></p></li>
 <li class="fragment"><p><strong>Model score</strong> <span class="math inline">s_\theta</span> — the <strong>same log-ratio gap <span class="math inline">\Delta</span> as in DPO</strong>, i.e.&nbsp;how much more <span class="math inline">\pi_\theta</span> prefers <span class="math inline">y_c</span> over <span class="math inline">y_l</span> than the frozen <span class="math inline">\pi_{\text{ref}}</span> does; <span class="math inline">s_\theta &gt; 0</span> means the policy has already shifted toward <span class="math inline">y_c</span></p></li>
 <li class="fragment"><p><strong>Reward score</strong> <span class="math inline">s^*</span> — how much better the ASR + SV metrics say <span class="math inline">y_c</span> actually is, <span class="math inline">\Delta r = r^*(x, y_c) - r^*(x, y_l)</span>, scaled by <span class="math inline">\eta</span> (<span class="math inline">1.0</span> by default)</p></li>
 <li class="fragment"><p>Both scores are <strong>log-odds</strong>: the sigmoid turns each into the probability that “<span class="math inline">y_c</span> is better”</p>
 <p><span class="math display">p_\theta = \sigma(s_\theta) \quad \text{(model's belief)}, \qquad p^* = \sigma(s^*) \quad \text{(reward's belief)}</span></p></li>
-<li class="fragment"><p>Training makes the model’s belief <strong>match</strong> the reward’s belief — minimize <span class="math inline">\text{KL}\big[p^* \,\|\, p_\theta\big]</span>, which turns out to be exactly a <span class="math inline">\text{BCE}</span></p></li>
+<li class="fragment"><p>The <strong>belief is the log-odds squashed by the sigmoid</strong>: <span class="math inline">p = \sigma(s)</span>, with inverse <span class="math inline">s = \log\frac{p}{1-p}</span> (the logit) — so <span class="math inline">s = 0 \Rightarrow p = 0.5</span> (coin flip), and larger <span class="math inline">s \Rightarrow</span> stronger belief that “<span class="math inline">y_c</span> is better”</p></li>
+<li class="fragment"><p>Train the model’s belief <strong>to match</strong> the reward’s belief — minimize <span class="math inline">\text{KL}\big[p^* \,\|\, p_\theta\big]</span>, turns out to be a <span class="math inline">\text{BCE}</span></p></li>
 <li class="fragment"><p>DPO instead fixes the target at <span class="math inline">1</span> (“<span class="math inline">y_c</span> is better, period”), so it ignores how large the reward gap is</p></li>
 </ul>
 </section>
