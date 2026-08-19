@@ -322,7 +322,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
   - **Decoder Context** — context audio tokens prepended in the decoder
   - **SV Conditioned** — speaker embedding from a **Speaker Verification (SV)** model + encoder output
   - **Multi Encoder** — separate NAR encoder for context audio
-- 🇬🇧 **18k** h + multilingual CML data: 🇩🇪 1.5k h, 🇳🇱 642 h, 🇪🇸 476 + 42 h, 🇫🇷 283 h, 🇮🇹 131 h
+- 🇬🇧 **18k** with (or without) multilingual CML data: 🇩🇪 1.5k h, 🇳🇱 642 h, 🇪🇸 476 + 42 h, 🇫🇷 283 h, 🇮🇹 131 h
 
 ## Koel-TTS — Architecture Comparison
 
@@ -339,7 +339,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
 - **Training:** randomly drop the A+T conditioning with some probability — the model learns both **conditional** and **unconditional** generation paths
 - **Inference** is autoregressive, token by token — at **each step** we run **two forward passes**:
-  1. **Conditioned** — full input (A+T conditioning + previously generated tokens) → $\ell_c$
+  1. **Conditioned** — full input (A+T conditioning) → $\ell_c$
   2. **Unconditional** — A+T conditioning replaced by mask tokens → $\ell_u$
 - Sample the next token from the **interpolated logits**:
 
@@ -359,7 +359,6 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
 - Increasing $\gamma$ significantly reduces **CER** (Character Error Rate, via an **ASR** model) and increases **SSIM** (Speaker SIMilarity, cosine similarity of speaker embeddings via an SV model, unseen speakers)
 - Optimal $\gamma = 2.5$; **Decoder Context** benefits the most
-- CFG on a **preference-aligned** model gives the best results — the two techniques are **additive**
 
 ## Preference Data Pipeline
 
