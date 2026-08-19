@@ -544,7 +544,7 @@ Vladislav Stankov
 <li>Larger <strong>FSQ</strong> codebooks: <strong>2016</strong> levels (<span class="math inline">[8, 7, 6, 6]</span>) per codebook vs.&nbsp;<strong>1000</strong> (<span class="math inline">[8, 5, 5, 5]</span>) in the Spectral Codec</li>
 <li>Consumes <strong>raw audio</strong> directly instead of <strong>mel spectrograms</strong></li>
 <li>Adds a <strong>convolutional WavLM-based discriminator</strong></li>
-<li>Operates at <strong>22.05 kHz</strong></li>
+<li>Operates at <strong>22.05 kHz</strong> vs <strong>44.1 kHz</strong> in the Spectral Codec</li>
 </ul></li>
 </ul>
 <div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
@@ -621,7 +621,7 @@ Vladislav Stankov
 <li><strong>SV Conditioned</strong> — speaker embedding from a <strong>Speaker Verification (SV)</strong> model + encoder output</li>
 <li><strong>Multi Encoder</strong> — separate NAR encoder for context audio</li>
 </ul></li>
-<li>🇬🇧 <strong>18k</strong> h + multilingual CML data: 🇩🇪 1.5k h, 🇳🇱 642 h, 🇪🇸 476 + 42 h, 🇫🇷 283 h, 🇮🇹 131 h</li>
+<li>🇬🇧 <strong>18k</strong> with (or without) multilingual CML data: 🇩🇪 1.5k h, 🇳🇱 642 h, 🇪🇸 476 + 42 h, 🇫🇷 283 h, 🇮🇹 131 h</li>
 </ul>
 </section>
 <section id="koel-tts-architecture-comparison" class="slide level2">
@@ -645,7 +645,7 @@ Vladislav Stankov
 <li><p><strong>Training:</strong> randomly drop the A+T conditioning with some probability — the model learns both <strong>conditional</strong> and <strong>unconditional</strong> generation paths</p></li>
 <li><p><strong>Inference</strong> is autoregressive, token by token — at <strong>each step</strong> we run <strong>two forward passes</strong>:</p>
 <ol type="1">
-<li><strong>Conditioned</strong> — full input (A+T conditioning + previously generated tokens) → <span class="math inline">\ell_c</span></li>
+<li><strong>Conditioned</strong> — full input (A+T conditioning) → <span class="math inline">\ell_c</span></li>
 <li><strong>Unconditional</strong> — A+T conditioning replaced by mask tokens → <span class="math inline">\ell_u</span></li>
 </ol></li>
 <li><p>Sample the next token from the <strong>interpolated logits</strong>:</p>
@@ -669,7 +669,6 @@ Vladislav Stankov
 <ul>
 <li>Increasing <span class="math inline">\gamma</span> significantly reduces <strong>CER</strong> (Character Error Rate, via an <strong>ASR</strong> model) and increases <strong>SSIM</strong> (Speaker SIMilarity, cosine similarity of speaker embeddings via an SV model, unseen speakers)</li>
 <li>Optimal <span class="math inline">\gamma = 2.5</span>; <strong>Decoder Context</strong> benefits the most</li>
-<li>CFG on a <strong>preference-aligned</strong> model gives the best results — the two techniques are <strong>additive</strong></li>
 </ul>
 </section>
 <section id="preference-data-pipeline" class="slide level2">
@@ -694,13 +693,16 @@ Vladislav Stankov
 </section>
 <section id="pareto-ranking" class="slide level2">
 <h2>Pareto Ranking</h2>
+<div class="wrapfig" style="width: 42%;">
+<p><img data-src="images/pareto-fronts.png" class=""></p>
+</div>
 <ul>
 <li><p>Sample <span class="math inline">A</span> is <strong>dominated</strong> by <span class="math inline">B</span> if <span class="math inline">B</span> is <strong>at least as good on both</strong> metrics and <strong>not identical</strong> — i.e.&nbsp;no sample is strictly better on one metric and equally good or better on the other</p></li>
 <li><p><strong>Pareto front</strong> = all non-dominated samples → assign them the current rank, <strong>remove</strong> them, repeat on the remainder → next front, and so on until every sample is ranked</p></li>
 <li><p>Within a front, <strong>prioritize lower CER</strong>, breaking remaining ties by <strong>higher SSIM</strong></p></li>
 <li><p><strong>DPO:</strong> take the <strong>first (top) and last (bottom) Pareto fronts</strong> as chosen <span class="math inline">y_c</span> and rejected <span class="math inline">y_l</span></p></li>
 <li><p><strong>RPO:</strong> pair the <strong>top two with the bottom two</strong> in all combinations (4 pairs), since it handles <strong>scalar reward differences</strong> instead of a binary preference</p></li>
-<li><p>In both cases, <strong>discard</strong> pairs where the chosen sample scores <strong>worse on any metric</strong></p></li>
+<li><p>In both cases, <strong>discard</strong> pairs where the chosen sample scores <strong>worse on any metric</strong>: <span class="math inline">m_1(C) &lt; m_1(G)</span></p></li>
 </ul>
 </section>
 <section id="dpo-direct-preference-optimization" class="slide level2">
@@ -721,11 +723,11 @@ Vladislav Stankov
 <ul>
 <li><p>The log-ratio isn’t an arbitrary choice — it <strong>drops out of the KL-regularized RLHF objective</strong>:</p>
 <p><span class="math display">\max_{\pi}\; \mathbb{E}_{y \sim \pi}\big[r(x, y)\big] - \beta\, D_{\text{KL}}\!\big(\pi(\cdot \mid x)\,\|\,\pi_{\text{ref}}(\cdot \mid x)\big)</span></p></li>
-<li><p>This objective has a <strong>closed-form optimal policy</strong> derived from the <strong>constrained</strong> problem — maximize subject to <span class="math inline">\sum_y \pi(y \mid x) = 1</span> — with a <strong>Lagrange multiplier</strong>, then setting the gradient with respect to <span class="math inline">\pi</span> to zero:</p>
+<li><p>This objective has a <strong>closed-form optimal policy</strong> derived from the <strong>constrained</strong> problem — maximize subject to <span class="math inline">\sum_y \pi(y \mid x) = 1</span> — using <strong>Lagrange multiplier</strong>, set the gradient with respect to <span class="math inline">\pi</span> to zero:</p>
 <p><span class="math display">\pi^*(y \mid x) = \frac{1}{Z(x)}\,\pi_{\text{ref}}(y \mid x)\,\exp\!\Big(\tfrac{1}{\beta}\, r(x, y)\Big)</span></p></li>
 <li><p>Rearrange and take logs → <strong>solve for the reward</strong>:</p>
 <p><span class="math display">r(x, y) = \beta \log\frac{\pi^*(y \mid x)}{\pi_{\text{ref}}(y \mid x)} + \beta \log Z(x)</span></p></li>
-<li><p><strong>Finally</strong>, apply standard <strong>Bradley–Terry</strong> preference model, where only the <strong>reward difference</strong> matters:</p>
+<li><p><strong>Finally</strong>, apply <strong>Bradley–Terry</strong> preference model, where only the <strong>reward difference</strong> matters:</p>
 <p><span class="math display">P(y_c \succ y_l \mid x) = \sigma\!\big(r(x, y_c) - r(x, y_l)\big) = \sigma\!\left(\log\frac{\pi_\theta(y_c \mid x)}{\pi_{\text{ref}}(y_c \mid x)} - \log\frac{\pi_\theta(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)}\right)</span></p>
 <p>the intractable <span class="math inline">\log Z(x)</span> is shared by both terms and <strong>cancels</strong></p></li>
 </ul>
@@ -734,10 +736,10 @@ Vladislav Stankov
 <h2>DPO — Optimal Policy Derivation (1/2)</h2>
 <ul>
 <li><p>For fixed <span class="math inline">x</span>, start from the KL-regularized objective:</p>
-<p><span class="math display">\max_{\pi}\ \sum_y \pi(y \mid x)\, r(x, y) - \beta \sum_y \pi(y \mid x) \log\frac{\pi(y \mid x)}{\pi_{\text{ref}}(y \mid x)}</span></p></li>
-<li><p>With <span class="math inline">\pi_y = \pi(y \mid x)</span>, <span class="math inline">q_y = \pi_{\text{ref}}(y \mid x)</span>, <span class="math inline">r_y = r(x, y)</span>, and a <strong>Lagrange multiplier</strong> enforcing <span class="math inline">\sum_y \pi_y = 1</span>:</p>
-<p><span class="math display">\mathcal{L} = \sum_y \pi_y r_y - \beta \sum_y \pi_y \log\frac{\pi_y}{q_y} + \lambda\Big(\sum_y \pi_y - 1\Big)</span></p></li>
-<li><p><strong>Differentiate</strong> w.r.t. each <span class="math inline">\pi_y</span> and set to zero, using <span class="math inline">\frac{\partial}{\partial \pi_y}\!\big[\pi_y \log\tfrac{\pi_y}{q_y}\big] = \log\tfrac{\pi_y}{q_y} + 1</span>:</p>
+<p><span class="math display">\max_{\pi}\ \sum_{y'} \pi(y' \mid x)\, r(x, y') - \beta \sum_{y'} \pi(y' \mid x) \log\frac{\pi(y' \mid x)}{\pi_{\text{ref}}(y' \mid x)}</span></p></li>
+<li><p>With <span class="math inline">\pi_{y'} = \pi(y' \mid x)</span>, <span class="math inline">q_{y'} = \pi_{\text{ref}}(y' \mid x)</span>, <span class="math inline">r_{y'} = r(x, y')</span>, and a <strong>Lagrange multiplier</strong> enforcing <span class="math inline">\sum_{y'} \pi_{y'} = 1</span>:</p>
+<p><span class="math display">\mathcal{L} = \sum_{y'} \pi_{y'} r_{y'} - \beta \sum_{y'} \pi_{y'} \log\frac{\pi_{y'}}{q_{y'}} + \lambda\Big(\sum_{y'} \pi_{y'} - 1\Big)</span></p></li>
+<li><p><strong>Differentiate</strong> w.r.t. one specific <span class="math inline">\pi_y</span> (only the <span class="math inline">y' = y</span> term survives) and set to zero, using <span class="math inline">\frac{\partial}{\partial \pi_y}\!\big[\pi_y \log\tfrac{\pi_y}{q_y}\big] = \log\tfrac{\pi_y}{q_y} + 1</span>:</p>
 <p><span class="math display">\frac{\partial \mathcal{L}}{\partial \pi_y} = r_y - \beta\Big(\log\frac{\pi_y}{q_y} + 1\Big) + \lambda = 0</span></p></li>
 <li><p><strong>Solve</strong> for the log-ratio and <strong>exponentiate</strong>:</p>
 <p><span class="math display">\log\frac{\pi_y}{q_y} = \frac{r_y}{\beta} + \frac{\lambda}{\beta} - 1 \;\Longrightarrow\; \pi_y = q_y\, e^{r_y/\beta}\, \underbrace{e^{\lambda/\beta - 1}}_{C}</span></p></li>
@@ -748,10 +750,10 @@ Vladislav Stankov
 <ul>
 <li><p>The last factor is <strong>independent of <span class="math inline">y</span></strong> — absorb it into a single normalization constant <span class="math inline">C</span>:</p>
 <p><span class="math display">\pi_y = C\, q_y\, e^{r_y/\beta}</span></p></li>
-<li><p><strong>Enforce</strong> <span class="math inline">\sum_y \pi_y = 1</span> to pin down <span class="math inline">C</span>:</p>
-<p><span class="math display">1 = C \sum_y q_y\, e^{r_y/\beta} \;\Longrightarrow\; C = \frac{1}{\sum_y q_y\, e^{r_y/\beta}}</span></p></li>
+<li><p><strong>Enforce</strong> <span class="math inline">\sum_{y'} \pi_{y'} = 1</span> to pin down <span class="math inline">C</span>:</p>
+<p><span class="math display">1 = C \sum_{y'} q_{y'}\, e^{r_{y'}/\beta} \;\Longrightarrow\; C = \frac{1}{\sum_{y'} q_{y'}\, e^{r_{y'}/\beta}}</span></p></li>
 <li><p><strong>Define</strong> the partition function <span class="math inline">Z(x)</span>, so <span class="math inline">C = 1/Z(x)</span>:</p>
-<p><span class="math display">Z(x) = \sum_y \pi_{\text{ref}}(y \mid x)\, e^{r(x, y)/\beta}</span></p></li>
+<p><span class="math display">Z(x) = \sum_{y'} \pi_{\text{ref}}(y' \mid x)\, e^{r(x, y')/\beta}</span></p></li>
 <li><p>And you recover exactly the policy used above:</p>
 <p><span class="math display">\boxed{\; \pi^*(y \mid x) = \frac{1}{Z(x)}\, \pi_{\text{ref}}(y \mid x)\, \exp\!\Big(\tfrac{1}{\beta}\, r(x, y)\Big) \;}</span></p></li>
 </ul>
