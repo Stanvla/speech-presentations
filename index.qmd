@@ -3,4 +3,4 @@ title: "Presentations"
 ---
 
 - **FSQ, LLaSA & Inworld TTS** — [animated](fsq-llasa-inworld/slides.qmd) · [handout](fsq-llasa-inworld/handout.qmd)
-- **Magpie TTS Codecs** — [animated](magpie-tts-codecs/slides.qmd) · [handout](magpie-tts-codecs/handout.qmd)
+- **Magpie TTS — Part 1** — [animated](magpie-tts-codecs/slides.qmd) · [handout](magpie-tts-codecs/handout.qmd)
