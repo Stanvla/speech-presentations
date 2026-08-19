@@ -266,7 +266,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
   - Larger **FSQ** codebooks: **2016** levels ($[8, 7, 6, 6]$) per codebook vs. **1000** ($[8, 5, 5, 5]$) in the Spectral Codec
   - Consumes **raw audio** directly instead of **mel spectrograms**
   - Adds a **convolutional WavLM-based discriminator**
-  - Operates at **22.05 kHz**
+  - Operates at **22.05 kHz** vs **44.1 kHz** in the Spectral Codec
 
 <div class="fragment" style="background: #f0f4f8; border-radius: 12px; padding: 0.8em 1.2em;">
 
@@ -381,13 +381,17 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
 ## Pareto Ranking
 
+::: {.wrapfig style="width: 42%;"}
+![](images/pareto-fronts.png){.nostretch}
+:::
+
 - Sample $A$ is **dominated** by $B$ if $B$ is **at least as good on both** metrics and **not identical** — i.e. no sample is strictly better on one metric and equally good or better on the other
 - **Pareto front** = all non-dominated samples → assign them the current rank, **remove** them, repeat on the remainder → next front, and so on until every sample is ranked
 - Within a front, **prioritize lower CER**, breaking remaining ties by **higher SSIM**
 
 - **DPO:** take the **first (top) and last (bottom) Pareto fronts** as chosen $y_c$ and rejected $y_l$
 - **RPO:** pair the **top two with the bottom two** in all combinations (4 pairs), since it handles **scalar reward differences** instead of a binary preference
-- In both cases, **discard** pairs where the chosen sample scores **worse on any metric**
+- In both cases, **discard** pairs where the chosen sample scores **worse on any metric**: $m_1(C) < m_1(G)$
 
 ## DPO — Direct Preference Optimization
 
@@ -413,7 +417,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
   $$\max_{\pi}\; \mathbb{E}_{y \sim \pi}\big[r(x, y)\big] - \beta\, D_{\text{KL}}\!\big(\pi(\cdot \mid x)\,\|\,\pi_{\text{ref}}(\cdot \mid x)\big)$$
 
-- This objective has a **closed-form optimal policy** derived from the **constrained** problem — maximize subject to $\sum_y \pi(y \mid x) = 1$ — with a **Lagrange multiplier**, then setting the gradient with respect to $\pi$ to zero:
+- This objective has a **closed-form optimal policy** derived from the **constrained** problem — maximize subject to $\sum_y \pi(y \mid x) = 1$ — using **Lagrange multiplier**, set the gradient with respect to $\pi$ to zero:
 
   $$\pi^*(y \mid x) = \frac{1}{Z(x)}\,\pi_{\text{ref}}(y \mid x)\,\exp\!\Big(\tfrac{1}{\beta}\, r(x, y)\Big)$$
 
@@ -422,7 +426,7 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
   $$r(x, y) = \beta \log\frac{\pi^*(y \mid x)}{\pi_{\text{ref}}(y \mid x)} + \beta \log Z(x)$$
 
-- **Finally**, apply standard **Bradley–Terry** preference model, where only the **reward difference** matters:
+- **Finally**, apply **Bradley–Terry** preference model, where only the **reward difference** matters:
 
   $$P(y_c \succ y_l \mid x) = \sigma\!\big(r(x, y_c) - r(x, y_l)\big) = \sigma\!\left(\log\frac{\pi_\theta(y_c \mid x)}{\pi_{\text{ref}}(y_c \mid x)} - \log\frac{\pi_\theta(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)}\right)$$
 
@@ -432,13 +436,13 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
 - For fixed $x$, start from the KL-regularized objective:
 
-  $$\max_{\pi}\ \sum_y \pi(y \mid x)\, r(x, y) - \beta \sum_y \pi(y \mid x) \log\frac{\pi(y \mid x)}{\pi_{\text{ref}}(y \mid x)}$$
+  $$\max_{\pi}\ \sum_{y'} \pi(y' \mid x)\, r(x, y') - \beta \sum_{y'} \pi(y' \mid x) \log\frac{\pi(y' \mid x)}{\pi_{\text{ref}}(y' \mid x)}$$
 
-- With $\pi_y = \pi(y \mid x)$, $q_y = \pi_{\text{ref}}(y \mid x)$, $r_y = r(x, y)$, and a **Lagrange multiplier** enforcing $\sum_y \pi_y = 1$:
+- With $\pi_{y'} = \pi(y' \mid x)$, $q_{y'} = \pi_{\text{ref}}(y' \mid x)$, $r_{y'} = r(x, y')$, and a **Lagrange multiplier** enforcing $\sum_{y'} \pi_{y'} = 1$:
 
-  $$\mathcal{L} = \sum_y \pi_y r_y - \beta \sum_y \pi_y \log\frac{\pi_y}{q_y} + \lambda\Big(\sum_y \pi_y - 1\Big)$$
+  $$\mathcal{L} = \sum_{y'} \pi_{y'} r_{y'} - \beta \sum_{y'} \pi_{y'} \log\frac{\pi_{y'}}{q_{y'}} + \lambda\Big(\sum_{y'} \pi_{y'} - 1\Big)$$
 
-- **Differentiate** w.r.t. each $\pi_y$ and set to zero, using $\frac{\partial}{\partial \pi_y}\!\big[\pi_y \log\tfrac{\pi_y}{q_y}\big] = \log\tfrac{\pi_y}{q_y} + 1$:
+- **Differentiate** w.r.t. one specific $\pi_y$ (only the $y' = y$ term survives) and set to zero, using $\frac{\partial}{\partial \pi_y}\!\big[\pi_y \log\tfrac{\pi_y}{q_y}\big] = \log\tfrac{\pi_y}{q_y} + 1$:
 
   $$\frac{\partial \mathcal{L}}{\partial \pi_y} = r_y - \beta\Big(\log\frac{\pi_y}{q_y} + 1\Big) + \lambda = 0$$
 
@@ -452,13 +456,13 @@ Whether head $k$ is **active** at time $t$ also depends on the pattern — inact
 
   $$\pi_y = C\, q_y\, e^{r_y/\beta}$$
 
-- **Enforce** $\sum_y \pi_y = 1$ to pin down $C$:
+- **Enforce** $\sum_{y'} \pi_{y'} = 1$ to pin down $C$:
 
-  $$1 = C \sum_y q_y\, e^{r_y/\beta} \;\Longrightarrow\; C = \frac{1}{\sum_y q_y\, e^{r_y/\beta}}$$
+  $$1 = C \sum_{y'} q_{y'}\, e^{r_{y'}/\beta} \;\Longrightarrow\; C = \frac{1}{\sum_{y'} q_{y'}\, e^{r_{y'}/\beta}}$$
 
 - **Define** the partition function $Z(x)$, so $C = 1/Z(x)$:
 
-  $$Z(x) = \sum_y \pi_{\text{ref}}(y \mid x)\, e^{r(x, y)/\beta}$$
+  $$Z(x) = \sum_{y'} \pi_{\text{ref}}(y' \mid x)\, e^{r(x, y')/\beta}$$
 
 - And you recover exactly the policy used above:
 
